@@ -1,0 +1,51 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="_base.css">
+<style>
+  .cap { position: absolute; z-index: 4; display: flex; flex-direction: column; justify-content: center; }
+  .cap h1 { overflow: hidden; }
+</style></head><body>
+<script src="_base.js"></script>
+<script>
+const { J, S, W, H, P, el, rich, background, decor, fit } = KIT;
+if (S.upper) document.body.classList.add('upper');
+background(document.body);
+const layout = J.layout || (P ? ['top', 'tilt'][(J.index || 0) % 2] : 'split');
+const ar = J.aspect || (P ? 9 / 16 : 16 / 9);     // aspect of the captured frame (w/h)
+const r = (S.corner || 0.06) * Math.min(W, H);
+
+const card = el('div', 'card'); const img = el('img'); img.src = J.image; card.appendChild(img);
+const cap = el('div', 'cap'); const h1 = el('h1', null, rich(J.headline)); cap.appendChild(h1);
+let sub = null; if (J.sub) { sub = el('div', 'sub', rich(J.sub)); cap.appendChild(sub); }
+if (J.crop) img.style.objectPosition = J.crop; // e.g. "50% 30%"
+
+if (P) {
+  const cw = W * (layout === 'tilt' ? 0.78 : 0.82), ch = cw / ar;
+  const capH = H * 0.27, pad = W * 0.08;
+  cap.style.cssText = `left:${pad}px;right:${pad}px;height:${capH}px;align-items:center;text-align:center;gap:${H * .012}px;`;
+  if (layout === 'bottom') {
+    card.style.cssText = `left:${(W - cw) / 2}px;width:${cw}px;height:${ch}px;bottom:${capH + H * 0.03}px;border-radius:${r}px;`;
+    cap.style.bottom = H * 0.035 + 'px';
+  } else {
+    cap.style.top = H * 0.03 + 'px';
+    const top = capH + H * 0.035;
+    card.style.cssText = `left:${(W - cw) / 2}px;width:${cw}px;height:${ch}px;top:${top}px;border-radius:${r}px;` +
+      (layout === 'tilt' ? `transform:rotate(${(J.index || 0) % 2 ? 4 : -4}deg);transform-origin:50% 30%;top:${top + H * 0.02}px;` : '');
+  }
+  document.body.append(card, cap);
+  h1.style.cssText = `width:100%;max-height:${capH * (sub ? .72 : .95)}px;`;
+  if (sub) sub.style.fontSize = W * 0.038 + 'px';
+  window.LAYOUT = () => fit(h1, W * (S.headline || 0.115), W * 0.06); // one size for the whole set; only too-long captions shrink
+} else {
+  const capW = W * 0.36, pad = W * 0.05;
+  const ch = H * 0.80, cw = ch * ar;
+  const left = Math.max(capW + pad * 1.2, W - cw - pad * 0.4);
+  card.style.cssText = `left:${left}px;top:${(H - ch) / 2}px;width:${cw}px;height:${ch}px;border-radius:${r}px;transform:perspective(2400px) rotateY(-9deg) rotateZ(1deg);transform-origin:0 50%;`;
+  cap.style.cssText = `left:${pad}px;top:${H * .12}px;bottom:${H * .12}px;width:${capW}px;gap:${H * .025}px;`;
+  document.body.append(card, cap);
+  h1.style.cssText = `width:100%;max-height:${H * (sub ? .52 : .7)}px;`;
+  if (sub) sub.style.fontSize = H * 0.045 + 'px';
+  window.LAYOUT = () => fit(h1, H * (S.headline || 0.115) * 1.3, H * 0.06);
+}
+if (J.badge) { const b = el('div', 'badge', J.badge); b.style.cssText = `font-size:${Math.min(W, H) * .045}px;padding:.35em .9em;right:${W * .07}px;top:${P ? H * .29 : H * .08}px;transform:rotate(6deg)`; document.body.appendChild(b); }
+decor(document.body);
+</script></body></html>
