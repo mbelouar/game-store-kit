@@ -23,20 +23,19 @@ Scripts live in `~/.claude/skills/game-store-kit/scripts`.
 4. **The skill never modifies the project.** Read the game's files, but never edit, create or delete anything outside `store-assets/`: no copying icons into `android/res`, no `.gitignore` edits, no `npm run build` into `dist/`, no `cap sync`, no Gradle/Flutter/Unity/Godot builds into the project's own folders. If a build is needed to play the game, build a **copy** into `store-assets/work/build/` (e.g. `npx vite build --outDir "$PROJECT/store-assets/work/build/web" --emptyOutDir`, `flutter build web --output ...`, a Godot export path under `work/build/`). If a build cannot avoid writing into the project (e.g. Android Gradle), ask the user first and say exactly what it will touch.
 5. The folder must be **self-contained and movable**: the user moves `store-assets/` out of the project afterwards. All paths inside it are relative to it, and the last step (`pack.mjs`) leaves only what's needed.
 
-Final layout of `store-assets/` (after pack):
+Final contents of `store-assets/` (after pack): **only what's needed to publish on Google Play**:
 ```
-README.md  preview.html  brand.json  plan.json
-play-store/   icon-512.png  feature-graphic-1024x500.png  screenshots/
-android/res/  launcher icons + adaptive layers + Android 12 splash icon (ready to copy, not copied)
-ios/          AppIcon-1024.png
-splash/       portrait, landscape, 2732² splash
-icon/         icon.svg fg.svg bg.svg mono.svg + concepts/
-brand/        logo + character sprites from the game
-source/       frames/ (only the frames used) + scripts/ (play script)
+play-store/
+  icon-512.png                   Play Console > Store listing > App icon
+  feature-graphic-1024x500.png   Play Console > Store listing > Feature graphic
+  screenshots/phone-01..08.png   Play Console > Store listing > Phone screenshots (in order)
+android-icon/
+  foreground.png  background.png 1024px: Android Studio > app > res > New > Image Asset
+                                 (Foreground layer: Path = foreground.png, Background layer: Path = background.png)
 ```
-During a run, `work/` holds scratch (raw captures, contact sheet, temp builds); pack deletes it.
+During a run, everything else (brand.json, plan.json, icon sources, frames, Android/iOS/splash renders, preview.html, `work/`) lives in `store-assets/` and is deleted by pack. `pack.mjs --full` keeps it all, only if the user asks to keep sources for later rebuilds.
 
-**Golden rule — one brand bible.** `store-assets/brand.json` is the single source of truth (palette, fonts, style, captions). Every template reads it, so icon, splash, feature graphic and screenshots share the same colors, type, background system and grain. If `brand.json` already exists, **reuse it unchanged** unless the user asks for a new look — that is what keeps the game consistent across runs.
+**Golden rule — one brand bible.** `store-assets/brand.json` is the single source of truth (palette, fonts, style, captions). Every template reads it, so icon, splash, feature graphic and screenshots share the same colors, type, background system and grain. If `brand.json` already exists (a `--full` pack), **reuse it unchanged** unless the user asks for a new look. Otherwise derive it again from the game with the same rules (logo colors, mascot, genre font), which gives the same look.
 
 ## 0. Setup (first run only)
 
@@ -202,15 +201,15 @@ Read every rendered PNG. Fix and rebuild until all are true:
 
 Tweak `brand.json` (colors/style) or `plan.json` (captions/frames/crops/layout), never hand-edit PNGs.
 
-## 9. Pack and hand off
+## 9. Check, show, then pack
 
-```bash
-GSK_PROJECT="$PROJECT" node ~/.claude/skills/game-store-kit/scripts/pack.mjs
-```
-Keeps only the needed outputs (used frames move to `source/frames/`, `plan.json` is rewritten to match), deletes `work/`, and writes `README.md` (what each file is and where to upload it). Then confirm nothing outside `store-assets/` changed:
+1. Confirm nothing outside `store-assets/` changed (must print nothing unless the user approved a build):
 ```bash
 find "$PROJECT" -newer "$PROJECT/store-assets/brand.json" -not -path "$PROJECT/store-assets/*" -not -path "*/node_modules/*" -type f | head
 ```
-(Anything listed must be explained: it should be empty unless the user approved a build.)
-
-Show `store-assets/preview.html`, list what was made, and say which icon concept you chose and why. Offer localized captions or another icon concept. Do **not** offer to copy files into the project. `README.md` tells the user where each file goes.
+2. Show the user the result (send the screenshots, feature graphic and icon, or open `preview.html`) and say which icon concept you chose and why. Make changes they ask for now, because sources are deleted next.
+3. Pack. Only the Play Store files and the Image Asset sources remain:
+```bash
+GSK_PROJECT="$PROJECT" node ~/.claude/skills/game-store-kit/scripts/pack.mjs
+```
+4. Tell the user where each file goes (the table above). Do **not** copy anything into the project. The user adds the icon in Android Studio (Image Asset) and builds the AAB themselves.

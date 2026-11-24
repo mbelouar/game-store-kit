@@ -1,14 +1,18 @@
 # game-store-kit
 
-A [Claude Code](https://claude.com/claude-code) skill that **plays your game** and turns the best moments into a premium, consistent store kit:
+A [Claude Code](https://claude.com/claude-code) skill that **plays your game** and turns the best moments into a premium, consistent Google Play kit. You get only what you need to publish:
 
-- **Google Play**: 512 icon, 1024×500 feature graphic, 2–8 captioned phone screenshots (optional tablet)
-- **Android**: launcher icons for every density, adaptive icon layers (foreground, background, monochrome) and the Android 12 splash icon
-- **iOS**: 1024 App Store icon
-- **Splash screens**: portrait, landscape and 2732² universal
-- `preview.html` gallery plus a Play Store spec check
+```
+store-assets/
+  play-store/
+    icon-512.png                   -> Play Console: App icon
+    feature-graphic-1024x500.png   -> Play Console: Feature graphic
+    screenshots/phone-01..08.png   -> Play Console: Phone screenshots
+  android-icon/
+    foreground.png  background.png -> Android Studio: res > New > Image Asset (app launcher icon)
+```
 
-Every asset reads one brand file (`brand.json`: palette, fonts, style), so the icon, splash, feature graphic and screenshots look like one art director made them. Later runs reuse it, so the look stays the same.
+The icon, feature graphic and screenshots share one look (palette, fonts, background, outlines) taken from your game's own logo and characters.
 
 ## How it works
 1. **Understands the game**: detects the engine (web/Phaser/Pixi/Three, Capacitor, Flutter, Unity, Godot, Android, React Native/Expo), orientation, controls, bosses, worlds and progression.
@@ -16,7 +20,7 @@ Every asset reads one brand file (`brand.json`: palette, fonts, style), so the i
 3. **Picks hero moments**: scores the frames, drops duplicates and favours variety across worlds and modes.
 4. **Takes real art from the game**: grabs your in-game logo and renders your characters at high resolution, then designs the icon around your mascot.
 5. **Renders and checks everything** with HTML templates, reviews its own output and fixes problems.
-6. **Packs** a clean, self-contained `store-assets/` folder with a README that says where each file is uploaded.
+6. **Packs**: deletes everything except the Play Store files and the Image Asset sources.
 
 **It never modifies your project.** Everything goes into `<project>/store-assets/`, which you can move anywhere afterwards.
 
@@ -34,10 +38,7 @@ Open Claude Code in your game's folder and run:
 ```
 /game-store-kit
 ```
-To regenerate after tweaking `brand.json` or `plan.json` (captions, frames, crops):
-```bash
-node ~/.claude/skills/game-store-kit/scripts/build.mjs --dir path/to/store-assets
-```
+Ask for changes (captions, frames, icon concept) before it packs. To keep the sources for later rebuilds, ask it to pack with `--full`.
 
 ## Scripts
 | Script | What it does |
@@ -50,7 +51,7 @@ node ~/.claude/skills/game-store-kit/scripts/build.mjs --dir path/to/store-asset
 | `grab.mjs` | Captures a DOM element (such as the in-game logo) as a transparent PNG |
 | `render.mjs` / `build.mjs` | Renders every asset at exact store sizes from `brand.json` and `plan.json` |
 | `finalize.py` | Flattens transparency where stores require it, checks specs, writes `preview.html` |
-| `pack.mjs` | Keeps only the needed outputs and writes the folder README |
+| `pack.mjs` | Keeps only the Play Store files + Image Asset sources (`--full` keeps everything) |
 
 ## License
 MIT
