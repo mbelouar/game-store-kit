@@ -60,17 +60,28 @@ if (want('shots') && shots.length) {
   for (const sz of sizes) shots.forEach((s, i) => {
     const dim = pngSize(s.image); const aspect = s.aspect || (dim ? dim[0] / dim[1] : undefined);
     jobs.push({ template: 'screenshot', out: R(`play-store/screenshots/${sz.tag}-${String(i + 1).padStart(2, '0')}.png`), w: sz.w, h: sz.h,
-      data: { ...s, aspect, index: i, total: shots.length } });
+      data: { ...s, aspect, index: i, total: shots.length, bridgeLeft: i > 0 ? shots[i - 1].bridge : undefined } });
   });
 }
 // ---------- FEATURE GRAPHIC ----------
-if (want('feature') && plan.feature) jobs.push({ template: 'feature', out: R('play-store/feature-graphic-1024x500.png'), w: 1024, h: 500, data: plan.feature });
+// plan.feature.template can point at the same key-art page as the splash (premium listings use the key art here)
+if (want('feature') && plan.feature) {
+  const ft = plan.feature.template;
+  if (ft) { const kit = path.join(path.dirname(R(ft)), 'kit'); fs.mkdirSync(kit, { recursive: true }); for (const f of ['_base.css', '_base.js', 'scene.js']) fs.copyFileSync(path.join(here, '..', 'templates', f), path.join(kit, f)); }
+  jobs.push({ template: ft || 'feature', out: R('play-store/feature-graphic-1024x500.png'), w: 1024, h: 500, data: { ...plan.feature, feature: true } });
+}
 // ---------- SPLASH ----------
 if (want('splash')) {
   const sp = plan.splash || {};
-  jobs.push({ template: 'splash', out: R('splash/splash-1080x1920.png'), w: 1080, h: 1920, data: sp });
-  jobs.push({ template: 'splash', out: R('splash/splash-1920x1080.png'), w: 1920, h: 1080, data: sp });
-  jobs.push({ template: 'splash', out: R('splash/splash-2732x2732.png'), w: 2732, h: 2732, data: sp });
+  // plan.splash.template = a custom key-art page (e.g. "work/splash-art.html") built with templates/scene.js
+  const tpl = sp.template || 'splash';
+  if (sp.template) { // custom pages load kit/_base.css, kit/_base.js, kit/scene.js from the same folder
+    const kit = path.join(path.dirname(R(sp.template)), 'kit'); fs.mkdirSync(kit, { recursive: true });
+    for (const f of ['_base.css', '_base.js', 'scene.js']) fs.copyFileSync(path.join(here, '..', 'templates', f), path.join(kit, f));
+  }
+  jobs.push({ template: tpl, out: R('splash/splash-1080x1920.png'), w: 1080, h: 1920, data: sp });
+  jobs.push({ template: tpl, out: R('splash/splash-1920x1080.png'), w: 1920, h: 1080, data: sp });
+  jobs.push({ template: tpl, out: R('splash/splash-2732x2732.png'), w: 2732, h: 2732, data: sp });
 }
 if (jobs.length) run(jobs);
 execFileSync('python3', [path.join(here, 'finalize.py'), dir], { stdio: 'inherit' });

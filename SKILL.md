@@ -32,6 +32,8 @@ play-store/
 android-icon/
   foreground.png  background.png 1024px: Android Studio > app > res > New > Image Asset
                                  (Foreground layer: Path = foreground.png, Background layer: Path = background.png)
+splash/
+  splash-1080x1920.png  splash-1920x1080.png  splash-2732x2732.png   designed key-art splash
 ```
 During a run, everything else (brand.json, plan.json, icon sources, frames, Android/iOS/splash renders, preview.html, `work/`) lives in `store-assets/` and is deleted by pack. `pack.mjs --full` keeps it all, only if the user asks to keep sources for later rebuilds.
 
@@ -65,8 +67,10 @@ If missing, create it. Pull colors from the game itself, not your imagination:
   "orientation": "portrait",
   "colors": { "primary": "#5b21ff", "secondary": "#ff2d95", "accent": "#ffe14d", "dark": "#0a0620", "light": "#ffffff", "text": "#ffffff" },
   "fonts": { "display": "Lilita One", "body": "Nunito" },
-  "style": { "corner": 0.06, "grain": 0.07, "upper": true, "blurShot": true },
-  "logo": null
+  "style": { "corner": 0.06, "grain": 0.07, "upper": true, "blurShot": true,
+             "device": "phone", "deviceFinish": "black", "floaters": 4, "bokeh": 26 },
+  "logo": null,
+  "items": ["brand/items/coin.png", "brand/items/gem.png", "brand/items/powerup.png"]
 }
 ```
 Rules:
@@ -76,11 +80,13 @@ Rules:
   `GSK_PROJECT="$PROJECT" node ~/.claude/skills/game-store-kit/scripts/grab.mjs --root <webBuild> --selector ".logo svg" --play <play.mjs> --out "$PROJECT"/store-assets/brand/logo.png`
 - **Real character art:** if characters are drawn in code (canvas), render them yourself at high resolution on transparent canvases through `page.evaluate` (call the game's own draw function with a big scale, trim, save as data URL) into `store-assets/brand/sprites/`. Use them for the icon and `decor`.
 - Cartoon games with outlined type: set `style.textStroke` (the outline color, usually the game's ink color) and `style.strokeWidth` (≈0.012). If the icon uses a sunburst, set `style.burst` (`{"opacity":0.1,"glow":0.6}`) so the splash, feature graphic and screenshots echo it. `style.headline` (default 0.115 × width) is the one headline size for the whole set.
+- `style.device`: `"phone"` (default) puts each frame in a modern flagship phone (iPhone-18-like proportions: 19.5:9 screen, ultra-thin bezel, pill cutout, titanium band, side buttons, **no logos or branding**). `deviceFinish`: `black` | `silver` | `desert` | `brand`. Use `"none"` for bare rounded cards. Google Play discourages device imagery (it can limit featuring, but it's not rejected), so mention this once to the user.
+- `items`: real collectibles/power-ups/enemies from the game as transparent PNGs (`brand/items/`). They float around the phone at different depths, decorate chips, and bridge between screenshots. **Get them from the game's own draw code**: if the code lives in a closure, make an *instrumented copy* of the web build in `store-assets/work/build/web` (inject `window.__gsk = { drawItem, drawEnemy, ... }` before the closure ends) and render each item at high scale on a transparent canvas, then trim. Never edit the real project build.
 - `palette.py` prints `dominant` (often muddy) and `vivid` colors (characters, logo, FX). Brand colors usually come from `vivid` plus the logo.
 
 ## 3. Play the game and capture
 
-Aim for **60–200 frames** from real play across different moments. Capture at final resolution: portrait 1080×1920, landscape 1920×1080.
+Aim for **60–200 frames** from real play across different moments. capture-web defaults to a modern phone screen (402×874 @3x = 1206×2622, 19.5:9; landscape 2622×1206), so frames fill the phone mockup exactly.
 
 **Web builds** (web games, or Flutter/Godot/Unity web export — build one if needed, see `buildHints` from detect):
 1. Write `store-assets/work/play.mjs` tailored to THIS game from what you learned in step 1:
@@ -150,25 +156,42 @@ Write the final as:
 ```json
 {
   "screenshots": [
-    { "image": "work/raw/frame-0042.png", "headline": "Drift through a *neon* city", "sub": "One-thumb controls" },
-    { "image": "work/raw/frame-0077.png", "headline": "Chain *insane* combos", "badge": "NEW" },
-    { "image": "work/raw/frame-0103.png", "headline": "Beat the *boss*", "crop": "50% 35%",
-      "decor": [{ "src": "../assets/sprites/coin.png", "x": 88, "y": 30, "size": 14, "rot": 12 }] }
+    { "image": "work/raw/frame-0022.png", "headline": "Outrun the *T-Rex*", "chips": ["Tap to jump", "Swipe to duck"],
+      "bridge": { "src": "brand/items/meteor.png", "y": 33, "size": 30 } },
+    { "image": "work/raw/frame-0054.png", "headline": "Dodge the *Lava Worm*", "chips": [{ "icon": "brand/items/egg.png", "text": "Volcano Valley" }] },
+    { "image": "work/raw/frame-0124.png", "headline": "Grab *power-ups*",
+      "chips": [{ "icon": "brand/items/pu-shield.png", "text": "Shield" }, { "icon": "brand/items/pu-magnet.png", "text": "Magnet" }],
+      "callout": { "fx": 0.25, "fy": 0.465, "zoom": 3.2, "x": 76, "y": 62, "size": 34, "label": "Shield!" } }
   ],
-  "feature": { "image": "work/raw/frame-0042.png", "sub": "One thumb. Endless speed." },
-  "splash": { "foot": "Loading" },
-  "tablet": false
+  "feature": { "template": "work/splash-art.html" },
+  "splash": { "template": "work/splash-art.html" }
 }
 ```
 Paths are relative to `store-assets/`.
-Caption craft (this is most of the "premium" feeling):
-- 2–5 words, verb-first, benefit/emotion, not features ("Outsmart 100 bosses", not "Boss levels included"). Highlight ONE word with `*word*`. Same voice and tense across the set. No exclamation marks, no ALL-CAPS in the source (style handles case).
-- Screenshot #1 headline = the game's core promise.
-- `layout` is automatic (portrait alternates `top` / `tilt`, with the frame bleeding off the bottom; landscape uses `split`). `bottom` exists but crops the HUD off the top, so use it only with a reason.
+
+**Make every screenshot feel full and premium, never empty** (each one combines these):
+- **Headline** (2–5 words) and optionally **chips**: 1–3 glass pills with a real item icon ("Volcano Valley", "3 giant bosses", "Shield · Magnet · Rocket"). Use them on about half the shots.
+- **The phone** with the real frame, alternating straight and tilted (`hero` → `tilt-l` → `hero` → `tilt-r`), rising off the bottom edge with a warm stage glow.
+- **Floating real items** around the phone at three depths (far and soft, mid and sharp, one blurred foreground object at most). This is automatic from `brand.items` (`style.floaters` per shot, default 4). Override per shot with `floaters: [...]`.
+- **`callout`**: a zoom bubble on a small but exciting detail (a power-up, a combo counter, a rare item). `fx`/`fy` = focus point in the frame (0–1), `zoom` = how many bubble-widths the frame spans, `x`/`y` = bubble centre (% of canvas), `size` = % of the short side, `label` = short pill text. Use it on 1–2 shots.
+- **`bridge`**: an item straddling the right edge (enemy, meteor, egg). It continues on the next screenshot, so the set reads as one panorama in the store carousel. Use it on every other shot.
+- **`decor`**: a hero character popping out over the phone edge (0–1 per shot, at most 2 per set).
+- Bokeh, sunburst and grain come from `brand.style`.
+
+Caption craft:
+- Verb-first, benefit or emotion, not features ("Outsmart 100 bosses", not "Boss levels included"). Highlight ONE word with `*word*`. Same voice across the set. Screenshot #1 headline = the game's core promise.
 - Hyphenated words ("T-Rex") never break across lines.
-- `decor`: 0–2 real sprites from the game (transparent PNGs) popping out of the frame on at most half the shots — consistent size and drop shadow. Never invent art the game doesn't have. `size` is a % of the short side; keep decor away from the headline; add `"land": {x,y,size}` to override the position in landscape renders (splash 1920×1080).
-- Splash: `"noIcon": true` shows the logo (scaled by `logoScale`, default 0.78) with an optional hero sprite as decor; `image` tints the background with a gameplay frame.
-- `crop` (CSS object-position) to center the action when the frame isn't the screen's aspect.
+
+**Splash and feature graphic = designed key art, never "logo on a gameplay frame".** Write `store-assets/work/splash-art.html`. It loads `kit/_base.css`, `kit/_base.js` and `kit/scene.js` (build copies them next to it) and composes a scene with `SCENE`:
+`sky(stops)`, `glow(x,y,r,color)`, `rays(x,y,{count,opacity})`, `ridge({y,amp,color,kind:'hills'|'mountains'|'volcano'|'dunes',trees:'palm'|'pine'|'round',blur,highlight,glowColor})`, `comet(x1,y1,x2,y2,{head,width})`, `sprite(src,x,y,size,{rot,flip,glowColor,filter,blur})`, `speed(x,y,{angle,len})`, `particles('embers'|'sparkles'|'snow'|'leaves'|'fireflies',n,{area})`, `vignette()`, `grain()`.
+Design process:
+1. **Concept first.** Write one line: the game's dramatic promise as a single frozen moment (DinoDash: "Meteor incoming: Rexy leaps clear while the Giant T-Rex charges out of the jungle at dusk"). Think key art or a movie poster, not a menu screen.
+2. **Story.** The hero mid-action (jump, swing, drift) + the threat or goal (boss, meteor, finish line) + a hint of reward (coins, gems).
+3. **Depth.** At least 3 parallax layers (far range, mid silhouettes, near ground), lighter and hazier far, darker near. Atmospheric light from one dramatic source (meteor, sun, portal, lava). Darken secondary characters (`filter: 'brightness(.72)'`) so the hero pops.
+4. **Palette** from the game's worlds, pushed toward dusk/neon drama, still reading as the same game.
+5. **Logo** large at the top with a soft glow, part of the scene and not a sticker.
+6. **One page, all sizes.** Use `o(portrait, landscape, square, feature)` values so 1080×1920, 1920×1080, 2732² and the 1024×500 feature graphic each get their own composition. Keep key elements away from the outer ~8% (crops and masks).
+7. Render, look at all four, fix overlaps, empty areas and tangents, and repeat until it looks like a poster.
 
 ## 7. Build everything
 
@@ -183,6 +206,7 @@ store-assets/
   android/res/mipmap-anydpi-v26/ic_launcher.xml   android/res/drawable-nodpi/splash_icon.png
   ios/AppIcon-1024.png
   splash/splash-1080x1920.png  splash-1920x1080.png  splash-2732x2732.png
+  android-icon/foreground.png  background.png
   preview.html            (gallery + spec check)
 ```
 It flattens alpha where stores forbid it and validates Play specs (icon 512² ≤1MB; feature 1024×500; 2–8 screenshots, aspect ≤2:1, ≤8MB).
@@ -196,7 +220,9 @@ Read every rendered PNG. Fix and rebuild until all are true:
 - [ ] Game frames are sharp (no upscaled blur) and show real gameplay.
 - [ ] Icon reads at 48px; matches splash and feature graphic colors.
 - [ ] Feature graphic: title/logo readable at thumbnail size, nothing important in the outer 10% edges.
-- [ ] Splash: centered, calm, on-brand; no text other than name/logo.
+- [ ] Every screenshot feels full: headline + phone + 3–5 real items at depth, with chips, callout or bridge on alternating shots. No empty corners, no clutter over the gameplay.
+- [ ] Bridges line up across neighbouring screenshots (same y and size); the dynamic-island cutout doesn't hide anything important.
+- [ ] Splash and feature graphic are composed key art (concept, story, depth, light), not a logo on a frame; they work at every size.
 - [ ] Spec check in `preview.html` passes.
 
 Tweak `brand.json` (colors/style) or `plan.json` (captions/frames/crops/layout), never hand-edit PNGs.
@@ -208,7 +234,7 @@ Tweak `brand.json` (colors/style) or `plan.json` (captions/frames/crops/layout),
 find "$PROJECT" -newer "$PROJECT/store-assets/brand.json" -not -path "$PROJECT/store-assets/*" -not -path "*/node_modules/*" -type f | head
 ```
 2. Show the user the result (send the screenshots, feature graphic and icon, or open `preview.html`) and say which icon concept you chose and why. Make changes they ask for now, because sources are deleted next.
-3. Pack. Only the Play Store files and the Image Asset sources remain:
+3. Pack. Only the Play Store files, the Image Asset sources and the splash remain:
 ```bash
 GSK_PROJECT="$PROJECT" node ~/.claude/skills/game-store-kit/scripts/pack.mjs
 ```

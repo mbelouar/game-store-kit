@@ -1,51 +1,78 @@
 <!doctype html><html><head><meta charset="utf-8">
 <link rel="stylesheet" href="_base.css">
 <style>
-  .cap { position: absolute; z-index: 4; display: flex; flex-direction: column; justify-content: center; }
-  .cap h1 { overflow: hidden; }
+  .cap { position: absolute; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .stage { position: absolute; z-index: 2; border-radius: 50%; background: radial-gradient(ellipse at center, color-mix(in oklab, var(--accent) 55%, transparent) 0%, transparent 65%); filter: blur(20px); }
 </style></head><body>
 <script src="_base.js"></script>
 <script>
-const { J, S, W, H, P, el, rich, background, decor, fit } = KIT;
+// Premium screenshot: headline + chips, game frame inside a modern phone (or bare card when style.device = 'none'),
+// floating real game objects at depth, optional zoom callout, objects bridging to neighbouring screenshots.
+const { B, J, S, W, H, P, el, rich, background, fit, phone, chips, callout, floaters, bridge, bokeh, decor } = KIT;
 if (S.upper) document.body.classList.add('upper');
 background(document.body);
-const layout = J.layout || (P ? ['top', 'tilt'][(J.index || 0) % 2] : 'split');
-const ar = J.aspect || (P ? 9 / 16 : 16 / 9);     // aspect of the captured frame (w/h)
-const r = (S.corner || 0.06) * Math.min(W, H);
+bokeh(document.body, S.bokeh ?? 26, (J.index || 0) + 1);
+const idx = J.index || 0;
+const layout = J.layout || (P ? ['hero', 'tilt-l', 'hero', 'tilt-r'][idx % 4] : 'split');
+const short = Math.min(W, H);
+const fa = J.aspect || (P ? 1206 / 2622 : 2622 / 1206);   // captured frame aspect (w/h)
+const device = (J.device ?? S.device ?? 'phone') !== 'none';
 
-const card = el('div', 'card'); const img = el('img'); img.src = J.image; card.appendChild(img);
-const cap = el('div', 'cap'); const h1 = el('h1', null, rich(J.headline)); cap.appendChild(h1);
-let sub = null; if (J.sub) { sub = el('div', 'sub', rich(J.sub)); cap.appendChild(sub); }
-if (J.crop) img.style.objectPosition = J.crop; // e.g. "50% 30%"
+// ---------- text block
+const cap = el('div', 'cap');
+const h1 = el('h1', null, rich(J.headline)); cap.appendChild(h1);
+if (J.sub) { const s = el('div', 'sub', rich(J.sub)); s.style.fontSize = short * 0.036 + 'px'; s.style.marginTop = short * .012 + 'px'; cap.appendChild(s); }
+if (J.chips && J.chips.length) { const c = chips(J.chips, short * 0.04); c.style.marginTop = short * .028 + 'px'; cap.appendChild(c); }
+document.body.appendChild(cap);
 
+// ---------- device
+let ph, box;
 if (P) {
-  const cw = W * (layout === 'tilt' ? 0.78 : 0.82), ch = cw / ar;
-  const capH = H * 0.27, pad = W * 0.08;
-  cap.style.cssText = `left:${pad}px;right:${pad}px;height:${capH}px;align-items:center;text-align:center;gap:${H * .012}px;`;
-  if (layout === 'bottom') {
-    card.style.cssText = `left:${(W - cw) / 2}px;width:${cw}px;height:${ch}px;bottom:${capH + H * 0.03}px;border-radius:${r}px;`;
-    cap.style.bottom = H * 0.035 + 'px';
-  } else {
-    cap.style.top = H * 0.03 + 'px';
-    const top = capH + H * 0.035;
-    card.style.cssText = `left:${(W - cw) / 2}px;width:${cw}px;height:${ch}px;top:${top}px;border-radius:${r}px;` +
-      (layout === 'tilt' ? `transform:rotate(${(J.index || 0) % 2 ? 4 : -4}deg);transform-origin:50% 30%;top:${top + H * 0.02}px;` : '');
-  }
-  document.body.append(card, cap);
-  h1.style.cssText = `width:100%;max-height:${capH * (sub ? .72 : .95)}px;`;
-  if (sub) sub.style.fontSize = W * 0.038 + 'px';
-  window.LAYOUT = () => fit(h1, W * (S.headline || 0.115), W * 0.06); // one size for the whole set; only too-long captions shrink
+  const capH = H * (J.chips ? .29 : .245);
+  cap.style.cssText = `left:${W * .06}px;right:${W * .06}px;top:${H * .035}px;height:${capH}px;`;
+  h1.style.cssText = `width:100%;max-height:${capH * (J.chips ? .58 : .78)}px;`;
+  const sw = W * (S.phoneScale || 0.64);
+  ph = device ? phone({ img: J.image, screenW: sw, aspect: fa, crop: J.crop }) : null;
+  const pw = ph ? ph.w : sw, phh = ph ? ph.h : sw / fa;
+  const top = H * .035 + capH + H * .02;
+  const tilt = layout === 'tilt-l' ? -7 : layout === 'tilt-r' ? 7 : 0;
+  const left = (W - pw) / 2 + (tilt ? Math.sign(tilt) * W * .03 : 0);
+  box = { x: left, y: top, w: pw, h: phh };
+  const node = ph ? ph.el : (() => { const c = el('div', 'card'); const i = el('img'); i.src = J.image; c.appendChild(i); c.style.borderRadius = short * .05 + 'px'; return c; })();
+  node.style.left = left + 'px'; node.style.top = top + 'px'; if (!ph) { node.style.width = pw + 'px'; node.style.height = phh + 'px'; }
+  node.style.transform = tilt ? `rotate(${tilt}deg)` : ''; node.style.transformOrigin = '50% 40%';
+  document.body.appendChild(node);
+  const st = el('div', 'stage'); st.style.cssText += `left:${left - pw * .3}px;top:${top + phh * .25}px;width:${pw * 1.6}px;height:${phh * .9}px;`; document.body.appendChild(st);
+  window.LAYOUT = () => fit(h1, W * (S.headline || 0.115), W * 0.06);
 } else {
-  const capW = W * 0.36, pad = W * 0.05;
-  const ch = H * 0.80, cw = ch * ar;
-  const left = Math.max(capW + pad * 1.2, W - cw - pad * 0.4);
-  card.style.cssText = `left:${left}px;top:${(H - ch) / 2}px;width:${cw}px;height:${ch}px;border-radius:${r}px;transform:perspective(2400px) rotateY(-9deg) rotateZ(1deg);transform-origin:0 50%;`;
-  cap.style.cssText = `left:${pad}px;top:${H * .12}px;bottom:${H * .12}px;width:${capW}px;gap:${H * .025}px;`;
-  document.body.append(card, cap);
-  h1.style.cssText = `width:100%;max-height:${H * (sub ? .52 : .7)}px;`;
-  if (sub) sub.style.fontSize = H * 0.045 + 'px';
+  const capW = W * .36;
+  cap.style.cssText = `left:${W * .04}px;top:${H * .1}px;bottom:${H * .1}px;width:${capW}px;`;
+  h1.style.cssText = `width:100%;max-height:${H * (J.chips ? .5 : .66)}px;`;
+  const sh = H * .74, sw = sh * fa;
+  ph = device ? phone({ img: J.image, screenW: sw, aspect: fa, landscape: true, crop: J.crop }) : null;
+  const pw = ph ? ph.w : sw, phh = ph ? ph.h : sh;
+  const left = Math.max(capW + W * .06, W - pw - W * .02), top = (H - phh) / 2;
+  box = { x: left, y: top, w: pw, h: phh };
+  const node = ph ? ph.el : (() => { const c = el('div', 'card'); const i = el('img'); i.src = J.image; c.appendChild(i); return c; })();
+  node.style.left = left + 'px'; node.style.top = top + 'px'; node.style.transform = 'perspective(2600px) rotateY(-10deg) rotateZ(1.5deg)';
+  document.body.appendChild(node);
   window.LAYOUT = () => fit(h1, H * (S.headline || 0.115) * 1.3, H * 0.06);
 }
-if (J.badge) { const b = el('div', 'badge', J.badge); b.style.cssText = `font-size:${Math.min(W, H) * .045}px;padding:.35em .9em;right:${W * .07}px;top:${P ? H * .29 : H * .08}px;transform:rotate(6deg)`; document.body.appendChild(b); }
+
+// ---------- callout (zoom bubble on a detail)
+if (J.callout) document.body.appendChild(callout(J.callout, J.image, fa));
+
+// ---------- floating real game objects around the device (slots avoid the text and screen centre)
+const slots = P ? [
+  { x: 9, y: 36, size: .1 }, { x: 91, y: 44, size: .095 }, { x: 8, y: 66, size: .09 }, { x: 92, y: 73, size: .1 },
+  { x: 11, y: 92, size: .15, depth: 'near' }, { x: 93, y: 26, size: .06, depth: 'far' }, { x: 5, y: 50, size: .055, depth: 'far' },
+] : [
+  { x: 6, y: 86, size: .13 }, { x: 40, y: 14, size: .1, depth: 'far' }, { x: 97, y: 12, size: .12 }, { x: 38, y: 90, size: .16, depth: 'near' }, { x: 96, y: 92, size: .14, depth: 'near' },
+];
+const items = J.floaters || B.items || [];
+floaters(document.body, items, J.floaterCount ?? S.floaters ?? 5, idx + 1, slots);
+bridge(document.body, J.bridge, 'right');
+bridge(document.body, J.bridgeLeft, 'left');
 decor(document.body);
+if (J.badge) { const b = el('div', 'badge', J.badge); b.style.cssText = `font-size:${short * .042}px;padding:.35em .9em;left:${box.x + box.w * .78}px;top:${box.y - short * .02}px;transform:rotate(8deg)`; document.body.appendChild(b); }
 </script></body></html>

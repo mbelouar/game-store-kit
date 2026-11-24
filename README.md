@@ -10,9 +10,13 @@ store-assets/
     screenshots/phone-01..08.png   -> Play Console: Phone screenshots
   android-icon/
     foreground.png  background.png -> Android Studio: res > New > Image Asset (app launcher icon)
+  splash/
+    splash-1080x1920 / 1920x1080 / 2732x2732 -> designed key-art splash
 ```
 
-The icon, feature graphic and screenshots share one look (palette, fonts, background, outlines) taken from your game's own logo and characters.
+- **Screenshots** show real gameplay inside a modern phone frame (iPhone-18-like proportions, unbranded; can be turned off), with outlined headlines, glass feature chips, the game's own items floating at depth, zoom callouts on key details, and objects that bridge from one screenshot into the next.
+- **Splash and feature graphic** are designed key art: a story moment with the hero, the threat, layered landscapes and dramatic light, built from the game's real characters. Not a logo pasted on a gameplay frame.
+- Everything shares one look (palette, fonts, outlines, light) taken from your game's own logo and characters.
 
 ## How it works
 1. **Understands the game**: detects the engine (web/Phaser/Pixi/Three, Capacitor, Flutter, Unity, Godot, Android, React Native/Expo), orientation, controls, bosses, worlds and progression.
@@ -20,7 +24,7 @@ The icon, feature graphic and screenshots share one look (palette, fonts, backgr
 3. **Picks hero moments**: scores the frames, drops duplicates and favours variety across worlds and modes.
 4. **Takes real art from the game**: grabs your in-game logo and renders your characters at high resolution, then designs the icon around your mascot.
 5. **Renders and checks everything** with HTML templates, reviews its own output and fixes problems.
-6. **Packs**: deletes everything except the Play Store files and the Image Asset sources.
+6. **Packs**: deletes everything except the Play Store files, the Image Asset sources and the splash.
 
 **It never modifies your project.** Everything goes into `<project>/store-assets/`, which you can move anywhere afterwards.
 
@@ -51,7 +55,8 @@ Ask for changes (captions, frames, icon concept) before it packs. To keep the so
 | `grab.mjs` | Captures a DOM element (such as the in-game logo) as a transparent PNG |
 | `render.mjs` / `build.mjs` | Renders every asset at exact store sizes from `brand.json` and `plan.json` |
 | `finalize.py` | Flattens transparency where stores require it, checks specs, writes `preview.html` |
-| `pack.mjs` | Keeps only the Play Store files + Image Asset sources (`--full` keeps everything) |
+| `pack.mjs` | Keeps only the Play Store files, Image Asset sources and splash (`--full` keeps everything) |
+| `templates/scene.js` | Key-art toolkit: sky, glow, rays, procedural ridges/volcanoes/trees, comets, particles, speed lines |
 
 ## License
 MIT

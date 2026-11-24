@@ -2,7 +2,7 @@
 // Play a web build (or any URL) in headless Chrome and capture frames while playing.
 // Usage:
 //   node capture-web.mjs --root build/web --out store-assets/work/raw [--play play.mjs]
-//        [--landscape] [--w 540 --h 960 --dpr 2] [--duration 90] [--interval 1500] [--selector canvas] [--url http://localhost:5173] [--query debug]
+//        [--landscape] [--w 402 --h 874 --dpr 3] [--duration 90] [--interval 1500] [--selector canvas] [--url http://localhost:5173] [--query debug]
 // play.mjs (written per game by Claude) may export:
 //   export async function before({ page, ctx })          // before load: seed localStorage save, etc.
 //   export async function setup({ page, sleep, w, h })    // get past title screen / tutorial
@@ -14,7 +14,8 @@ import { launch, serve, args, sleep, outDir } from './lib.mjs';
 
 const a = args();
 const land = !!a.landscape;
-const w = +(a.w || (land ? 960 : 540)), h = +(a.h || (land ? 540 : 960)), dpr = +(a.dpr || 2);
+// default viewport = a modern phone screen (402x874 pt @3x = 1206x2622, ~19.5:9) so frames fill the phone mockup exactly
+const w = +(a.w || (land ? 874 : 402)), h = +(a.h || (land ? 402 : 874)), dpr = +(a.dpr || 3);
 const out = path.resolve(a.out || path.join(outDir(), 'work', 'raw'));
 const duration = +(a.duration || 90) * 1000, interval = +(a.interval || 1500);
 fs.mkdirSync(out, { recursive: true });

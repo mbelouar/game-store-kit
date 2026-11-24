@@ -10,7 +10,7 @@ import { launch, serve, args, sleep, outDir } from './lib.mjs';
 
 const a = args();
 if (!a.selector) { console.error('--selector required'); process.exit(1); }
-const land = !!a.landscape, w = land ? 960 : 540, h = land ? 540 : 960;
+const land = !!a.landscape, w = land ? 874 : 402, h = land ? 402 : 874;
 const out = path.resolve(a.out || path.join(outDir(), 'brand', 'grab.png'));
 let srv = null, url = a.url;
 if (!url) { srv = await serve(a.root || '.'); url = srv.url; }
