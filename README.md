@@ -14,7 +14,7 @@ store-assets/
     splash-1080x1920 / 1920x1080 / 2732x2732 -> designed key-art splash
 ```
 
-- **Screenshots** show real gameplay inside a modern phone frame (iPhone-18-like proportions, unbranded; can be turned off), with outlined headlines, glass feature chips, the game's own items floating at depth, zoom callouts on key details, and objects that bridge from one screenshot into the next.
+- **Screenshots** are full-bleed real gameplay (the style Google recommends): zoomed so the action is big, HUD hidden, outlined headlines on the sky, glass feature chips, zoom callouts on key details, and the game's own items bridging from one screenshot into the next. A modern phone-mockup style is available as an option.
 - **Splash and feature graphic** are designed key art: a story moment with the hero, the threat, layered landscapes and dramatic light, built from the game's real characters. Not a logo pasted on a gameplay frame.
 - Everything shares one look (palette, fonts, outlines, light) taken from your game's own logo and characters.
 

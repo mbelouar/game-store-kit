@@ -68,7 +68,7 @@ If missing, create it. Pull colors from the game itself, not your imagination:
   "colors": { "primary": "#5b21ff", "secondary": "#ff2d95", "accent": "#ffe14d", "dark": "#0a0620", "light": "#ffffff", "text": "#ffffff" },
   "fonts": { "display": "Lilita One", "body": "Nunito" },
   "style": { "corner": 0.06, "grain": 0.07, "upper": true, "blurShot": true,
-             "device": "phone", "deviceFinish": "black", "floaters": 4, "bokeh": 26 },
+             "device": "bleed", "floaters": 4 },
   "logo": null,
   "items": ["brand/items/coin.png", "brand/items/gem.png", "brand/items/powerup.png"]
 }
@@ -80,7 +80,7 @@ Rules:
   `GSK_PROJECT="$PROJECT" node ~/.claude/skills/game-store-kit/scripts/grab.mjs --root <webBuild> --selector ".logo svg" --play <play.mjs> --out "$PROJECT"/store-assets/brand/logo.png`
 - **Real character art:** if characters are drawn in code (canvas), render them yourself at high resolution on transparent canvases through `page.evaluate` (call the game's own draw function with a big scale, trim, save as data URL) into `store-assets/brand/sprites/`. Use them for the icon and `decor`.
 - Cartoon games with outlined type: set `style.textStroke` (the outline color, usually the game's ink color) and `style.strokeWidth` (≈0.012). If the icon uses a sunburst, set `style.burst` (`{"opacity":0.1,"glow":0.6}`) so the splash, feature graphic and screenshots echo it. `style.headline` (default 0.115 × width) is the one headline size for the whole set.
-- `style.device`: `"phone"` (default) puts each frame in a modern flagship phone (iPhone-18-like proportions: 19.5:9 screen, ultra-thin bezel, pill cutout, titanium band, side buttons, **no logos or branding**). `deviceFinish`: `black` | `silver` | `desert` | `brand`. Use `"none"` for bare rounded cards. Google Play discourages device imagery (it can limit featuring, but it's not rejected), so mention this once to the user.
+- `style.device`: **`"bleed"` (default)**: full-bleed gameplay, the style top games use and Google recommends (no device imagery). Other values: `"phone"`, a modern unbranded phone mockup (iPhone-18-like; `deviceFinish`: `black` | `silver` | `desert` | `brand`); Google discourages device frames, which can limit featuring. `"none"`: rounded cards. Use `phone` only if the user asks for it, e.g. for social posts.
 - `items`: real collectibles/power-ups/enemies from the game as transparent PNGs (`brand/items/`). They float around the phone at different depths, decorate chips, and bridge between screenshots. **Get them from the game's own draw code**: if the code lives in a closure, make an *instrumented copy* of the web build in `store-assets/work/build/web` (inject `window.__gsk = { drawItem, drawEnemy, ... }` before the closure ends) and render each item at high scale on a transparent canvas, then trim. Never edit the real project build.
 - `palette.py` prints `dominant` (often muddy) and `vivid` colors (characters, logo, FX). Brand colors usually come from `vivid` plus the logo.
 
@@ -156,8 +156,10 @@ Write the final as:
 ```json
 {
   "screenshots": [
-    { "image": "work/raw/frame-0022.png", "headline": "Outrun the *T-Rex*", "chips": ["Tap to jump", "Swipe to duck"],
-      "bridge": { "src": "brand/items/meteor.png", "y": 33, "size": 30 } },
+    { "image": "work/raw/frame-0031.png", "headline": "Outrun the *T-Rex*", "chips": ["Tap to jump", "Swipe to duck"],
+      "focus": { "x": 0.28, "y": 0.62 }, "at": { "x": 0.48, "y": 0.8 }, "zoom": 1.32,
+      "bridge": { "src": "brand/items/egg-blue.png", "y": 58, "size": 12 } },
+    { "image": "work/raw/frame-0004-nest.png", "headline": "Hatch *6* dinos & 12 hats", "startAt": 0.21, "cropTop": 0.44, "zoom": 1.12, "floaterCount": 0 },
     { "image": "work/raw/frame-0054.png", "headline": "Dodge the *Lava Worm*", "chips": [{ "icon": "brand/items/egg.png", "text": "Volcano Valley" }] },
     { "image": "work/raw/frame-0124.png", "headline": "Grab *power-ups*",
       "chips": [{ "icon": "brand/items/pu-shield.png", "text": "Shield" }, { "icon": "brand/items/pu-magnet.png", "text": "Magnet" }],
@@ -171,8 +173,10 @@ Paths are relative to `store-assets/`.
 
 **Make every screenshot feel full and premium, never empty** (each one combines these):
 - **Headline** (2–5 words) and optionally **chips**: 1–3 glass pills with a real item icon ("Volcano Valley", "3 giant bosses", "Shield · Magnet · Rocket"). Use them on about half the shots.
-- **The phone** with the real frame, alternating straight and tilted (`hero` → `tilt-l` → `hero` → `tilt-r`), rising off the bottom edge with a warm stage glow.
-- **Floating real items** around the phone at three depths (far and soft, mid and sharp, one blurred foreground object at most). This is automatic from `brand.items` (`style.floaters` per shot, default 4). Override per shot with `floaters: [...]`.
+- **Full-bleed gameplay (default)**: the frame fills the whole canvas, zoomed (`zoom`, ~1.3 in portrait) so the characters are big. `focus` = the point of the action in the frame (0–1), `at` = where it lands on the canvas (0–1). The HUD is pushed off the top (`hudCrop`, default 0.13 of the frame) and the headline sits on calm sky over a soft gradient. Aim for action in the lower 2/3, little empty ground, nothing important under the caption.
+- **Menu or UI screens** (collection, map, upgrades): set `startAt` (≈0.21, the image starts below the caption with a soft fade) + `cropTop` (start at a clean section such as a card header, never half a button) + `zoom` ≈1.1 centred, `floaterCount: 0`. Check that nothing is cut at the sides and there's no empty strip at the bottom.
+- (`device: "phone"` only) the phone with the real frame, alternating straight and tilted, rising off the bottom edge.
+- **Floating real items** from `brand.items`. In full-bleed they stay in the corners (one far item at the top, at most one blurred foreground item at the bottom) and **never cover the action**. In phone mode they surround the phone at three depths. Override per shot with `floaters: [...]` / `floaterCount`.
 - **`callout`**: a zoom bubble on a small but exciting detail (a power-up, a combo counter, a rare item). `fx`/`fy` = focus point in the frame (0–1), `zoom` = how many bubble-widths the frame spans, `x`/`y` = bubble centre (% of canvas), `size` = % of the short side, `label` = short pill text. Use it on 1–2 shots.
 - **`bridge`**: an item straddling the right edge (enemy, meteor, egg). It continues on the next screenshot, so the set reads as one panorama in the store carousel. Use it on every other shot.
 - **`decor`**: a hero character popping out over the phone edge (0–1 per shot, at most 2 per set).
@@ -220,8 +224,9 @@ Read every rendered PNG. Fix and rebuild until all are true:
 - [ ] Game frames are sharp (no upscaled blur) and show real gameplay.
 - [ ] Icon reads at 48px; matches splash and feature graphic colors.
 - [ ] Feature graphic: title/logo readable at thumbnail size, nothing important in the outer 10% edges.
-- [ ] Every screenshot feels full: headline + phone + 3–5 real items at depth, with chips, callout or bridge on alternating shots. No empty corners, no clutter over the gameplay.
-- [ ] Bridges line up across neighbouring screenshots (same y and size); the dynamic-island cutout doesn't hide anything important.
+- [ ] Every screenshot feels full: headline + big gameplay + chips, callout or bridge on alternating shots. No HUD under the caption, no big empty ground or sky band, no item covering the action, no character cut at an edge.
+- [ ] Menu shots start at a clean section (no half buttons or headers under the fade), centred, no empty strip at the bottom.
+- [ ] Bridges line up across neighbouring screenshots (same y and size).
 - [ ] Splash and feature graphic are composed key art (concept, story, depth, light), not a logo on a frame; they work at every size.
 - [ ] Spec check in `preview.html` passes.
 
