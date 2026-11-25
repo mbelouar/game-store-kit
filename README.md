@@ -8,11 +8,16 @@ store-assets/
     icon-512.png                   -> Play Console: App icon
     feature-graphic-1024x500.png   -> Play Console: Feature graphic
     screenshots/phone-01..08.png   -> Play Console: Phone screenshots
-  android-icon/
-    foreground.png  background.png -> Android Studio: res > New > Image Asset (app launcher icon)
-  splash/
-    splash-1080x1920 / 1920x1080 / 2732x2732 -> designed key-art splash
+  capacitor-assets/                (Capacitor) icon + splash sources for the official @capacitor/assets tool
+  android-icon/ + splash/          (Unity) icon layers for Player Settings, key-art splash
 ```
+
+**Capacitor**: apply the icon and splash to your app (all densities, light and dark) from the project root:
+```bash
+npx @capacitor/assets generate --android --assetPath store-assets/capacitor-assets
+find android/app/src/main/res -name "ic_launcher*.webp" -delete
+```
+(`@capacitor/assets` writes every launcher icon as both `.png` and `.webp`, which Android rejects as duplicate resources; the second line fixes it.)
 
 - **Screenshots** are full-bleed real gameplay (the style Google recommends): zoomed so the action is big, HUD hidden, outlined headlines on the sky, glass feature chips, zoom callouts on key details, and the game's own items bridging from one screenshot into the next. A modern phone-mockup style is available as an option.
 - **Splash and feature graphic** are designed key art: a story moment with the hero, the threat, layered landscapes and dramatic light, built from the game's real characters. Not a logo pasted on a gameplay frame.

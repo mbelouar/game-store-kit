@@ -35,14 +35,23 @@ for p in shots: check(p, max_kb=8 * 1024, ratio=2.0, opaque=True)
 phone = [p for p in shots if "phone" in os.path.basename(p)]
 if phone and not 2 <= len(phone) <= 8: problems.append(f"Play Store needs 2-8 phone screenshots (have {len(phone)}); 4+ at 1080px for game promotion")
 for p in sorted(glob.glob(os.path.join(d, "splash/*.png"))): check(p, opaque=True)
-for p in sorted(glob.glob(os.path.join(d, "android/res/*/*.png"))): check(p)
+# @capacitor/assets sources (Capacitor games): icons >= 1024, splash >= 2732, opaque except the foreground layer
+CA = os.path.join(d, "capacitor-assets")
+if os.path.isdir(CA):
+    for n in ("icon-only", "icon-background"): check(os.path.join(CA, n + ".png"), 1024, 1024, opaque=True)
+    check(os.path.join(CA, "icon-foreground.png"), 1024, 1024)
+    for n in ("splash", "splash-dark"): check(os.path.join(CA, n + ".png"), 2732, 2732, opaque=True)
+    for n in ("icon-only", "icon-foreground", "icon-background", "splash", "splash-dark"):
+        if not os.path.exists(os.path.join(CA, n + ".png")): problems.append(f"capacitor-assets/{n}.png missing")
+# Image Asset / Unity icon layers
+for n in ("foreground", "background"): check(os.path.join(d, "android-icon", n + ".png"), 1024, 1024, opaque=(n == "background"))
 
 # preview page
 def tile(p, cls=""):
     r = os.path.relpath(p, d); return f'<figure class="{cls}"><img src="{html.escape(r)}"><figcaption>{html.escape(r)}</figcaption></figure>'
 sec = lambda title, items, cls="": f"<h2>{title}</h2><div class='row {cls}'>{''.join(items)}</div>" if items else ""
 icons = [p for p in [os.path.join(d, "play-store/icon-512.png")] if os.path.exists(p)]
-mip = sorted(glob.glob(os.path.join(d, "android/res/mipmap-xxxhdpi/*.png")))
+layers = sorted(glob.glob(os.path.join(d, "capacitor-assets/*.png")) + glob.glob(os.path.join(d, "android-icon/*.png")))
 page = f"""<!doctype html><meta charset=utf-8><title>{html.escape(brand.get('name','Game'))} — store assets</title>
 <style>body{{background:#0d0d10;color:#eee;font:14px -apple-system,system-ui,sans-serif;padding:32px}}h1{{font-size:28px}}h2{{margin:36px 0 12px;font-size:16px;letter-spacing:.08em;text-transform:uppercase;color:#aaa}}
 .row{{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}}figure{{margin:0}}figure img{{display:block;max-height:560px;max-width:100%;border-radius:10px;box-shadow:0 8px 30px #0008}}
@@ -53,7 +62,7 @@ page = f"""<!doctype html><meta charset=utf-8><title>{html.escape(brand.get('nam
 {sec('Phone screenshots', [tile(p) for p in phone])}
 {sec('Tablet screenshots', [tile(p) for p in shots if 'tablet' in os.path.basename(p)])}
 {sec('Splash', [tile(p) for p in sorted(glob.glob(os.path.join(d,'splash/*.png')))])}
-{sec('Android adaptive layers (xxxhdpi)', [tile(p) for p in mip], 'small')}
+{sec('Icon layers and splash sources', [tile(p) for p in layers], 'small')}
 <h2>Spec check</h2>{''.join(f"<div class=warn>⚠ {html.escape(x)}</div>" for x in problems) or '<div>All checks passed ✓</div>'}
 <table>{''.join('<tr>'+''.join(f'<td>{html.escape(c)}</td>' for c in r)+'</tr>' for r in rows)}</table>"""
 open(os.path.join(d, "preview.html"), "w").write(page)
