@@ -80,7 +80,7 @@ if (engine === 'capacitor') {
   const target = +v(/AndroidTargetSdkVersion:\s*(\d+)/), min = +v(/AndroidMinSdkVersion:\s*(\d+)/);
   if (target === 0) add('warn', 'Target SDK', `"Automatic (highest installed)": make sure Android SDK ${REQUIRED_TARGET}+ is installed in Unity, or set it explicitly (Player Settings > Other Settings > Target API Level)`);
   else sdkCheck(target, min, 'ProjectSettings.asset');
-  if (target === 0 && min) sdkCheck(REQUIRED_TARGET, min, '');   // prints min only
+  if (target === 0 && min) add('info', 'Min SDK', `${min}`);
   add('info', 'Version', `bundle version ${v(/bundleVersion:\s*(.+)/) || '?'}, version code ${v(/AndroidBundleVersionCode:\s*(\d+)/) || '?'} — every upload needs a higher version code`);
   const id = v(/applicationIdentifier:[\s\S]*?Android:\s*(\S+)/);
   add(/^com\.(DefaultCompany|Company)\b/i.test(id || '') ? 'fail' : 'ok', 'Application ID', `${id || '?'}${/DefaultCompany/i.test(id || '') ? ' — Unity default: set your own (Player Settings > Other Settings > Package Name); it can never change after the first upload' : ''}`);

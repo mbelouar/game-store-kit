@@ -35,7 +35,16 @@ if (has('ProjectSettings/ProjectSettings.asset')) {
   r.packageId = (ps.match(/applicationIdentifier:[\s\S]*?Android:\s*(\S+)/) || [])[1] || null;
   const o = (ps.match(/defaultScreenOrientation:\s*(\d)/) || [])[1];   // 0 portrait, 1 upside down, 2/3 landscape, 4 auto
   if (o) r.orientation = ['portrait', 'portrait', 'landscape', 'landscape', 'auto'][+o] || 'unknown';
-  if (r.orientation === 'auto') r.notes.push('Unity auto-rotation: check which orientations are allowed (allowedAutorotateTo*) and look at the first frames.');
+  if (r.orientation === 'auto') {   // auto-rotation: read which orientations the game actually allows
+    const al = k => /^\s*1/.test((ps.match(new RegExp(`allowedAutorotateTo${k}:\\s*(\\d)`)) || [])[1] || '0');
+    const por = al('Portrait') || al('PortraitUpsideDown'), lan = al('LandscapeRight') || al('LandscapeLeft');
+    r.orientation = por && !lan ? 'portrait' : lan && !por ? 'landscape' : 'auto';
+    if (r.orientation === 'auto') r.notes.push('Unity auto-rotation allows both portrait and landscape: capture a few frames in each and use the one the game is designed for (its UI/HUD will look right in it).');
+  }
+  // the editor version the project needs vs. the ones installed (opening with another version UPGRADES the project)
+  const hubDirs = process.platform === 'darwin' ? ['/Applications/Unity/Hub/Editor'] : process.platform === 'win32' ? ['C:/Program Files/Unity/Hub/Editor'] : [path.join(process.env.HOME || '', 'Unity/Hub/Editor')];
+  r.unityInstalled = hubDirs.flatMap(d => { try { return fs.readdirSync(d).filter(v => /^\d/.test(v)); } catch { return []; } });
+  if (r.unityVersion && !r.unityInstalled.includes(r.unityVersion)) r.notes.push(`Unity ${r.unityVersion} is not installed (installed: ${r.unityInstalled.join(', ') || 'none'}). Opening or building with another version upgrades the project files: install the exact version in Unity Hub, or only build from a copy of the project.`);
   // Art already wired in Player Settings (icons, splash logos/backgrounds) is stored as GUIDs: resolve them to files.
   const metas = new Map();
   for (const f of files) if (f.endsWith('.meta') && /\.(png|jpe?g|psd|tga|tif|tiff|svg|exr)\.meta$/i.test(f)) {
@@ -48,7 +57,9 @@ if (has('ProjectSettings/ProjectSettings.asset')) {
   }
   r.unityArt = [...used].map(([p, usedAs]) => ({ path: p, usedAs }));
   if (r.unityArt.length) r.notes.push('Unity Player Settings already reference art (unityArt): look at these first; they are usually the real icon, logo and splash art.');
-  r.unitySprites = files.filter(f => /^Assets\//.test(rel(f)) && /\.(png|psd)$/i.test(f) && /(player|hero|char|enemy|boss|coin|gem|logo|title|icon|item|power)/i.test(path.basename(f))).map(rel).slice(0, 40);
+  // likely game art: whole-word matches, skipping fonts, editor tools and plugin folders
+  const ART = /(^|[\s_\-.])(player|hero|char|character|enemy|boss|coins?|gems?|logo|title|icon|item|power|booster|chest|crown|star)([\s_\-.]|s?\.|$)/i;
+  r.unitySprites = files.filter(f => { const p = rel(f); return /^Assets\//.test(p) && /\.(png|psd)$/i.test(f) && !/\/(Fonts?|Editor|Gizmos|Plugins|Constructor|ThirdParty|TextMesh Pro)\//i.test(p) && ART.test(path.basename(f)); }).map(rel).slice(0, 40);
   // Playable builds the developer already made (never build into the project without asking)
   const webgl = files.filter(f => /\.loader\.js$/.test(f) && /Build/.test(f)).map(f => path.dirname(path.dirname(f)));
   if (webgl.length) r.webEntry = rel(webgl[0]);
@@ -107,9 +118,17 @@ if (r.engine === 'capacitor' && r.orientation === 'unknown') {
 }
 if (r.orientation === 'unknown') r.notes.push('Orientation unknown: capture a few seconds, look at the frame, and switch --landscape if the game is letterboxed.');
 
+// ------------------------------------------------------------------ Git LFS: art that was never downloaded is a tiny text pointer
+if (/filter=lfs/.test(read('.gitattributes'))) {
+  const sample = files.filter(f => /\.(png|jpe?g|psd|tga|wav|mp3|ogg|ttf|otf|fbx)$/i.test(f)).slice(0, 400);
+  const ptr = sample.filter(f => { try { const fd = fs.openSync(f, 'r'), b = Buffer.alloc(40); fs.readSync(fd, b, 0, 40, 0); fs.closeSync(fd); return b.toString('utf8').startsWith('version https://git-lfs'); } catch { return false; } });
+  r.lfsPointers = ptr.length;
+  if (ptr.length) r.notes.push(`Git LFS assets are NOT downloaded: ${ptr.length} of ${sample.length} sampled art/audio files are LFS pointer files (e.g. ${rel(ptr[0])}). The art, sprites and fonts can't be used and Unity can't build until the user runs: git lfs install && git lfs pull (installing Git LFS first if needed). Ask the user; don't treat pointers as images.`);
+}
+
 // ------------------------------------------------------------------ art & fonts (template placeholders filtered out)
 const placeholder = /(res\/(mipmap|drawable)[^/]*\/(ic_launcher|splash)|assets\/imgs\/logo\.png|favicon|UnityLogo|PackageCache)/i;
-const imgs = files.filter(f => /\.(png|jpe?g|webp|svg)$/i.test(f) && !placeholder.test(rel(f))).map(f => ({ f: rel(f), s: fs.statSync(f).size }));
+const imgs = files.filter(f => /\.(png|jpe?g|webp|svg)$/i.test(f) && !placeholder.test(rel(f)) && fs.statSync(f).size > 200).map(f => ({ f: rel(f), s: fs.statSync(f).size }));
 const score = x => (/(icon|logo|title|splash|hero|player|char|boss|cover|key.?art|mascot)/i.test(x.f) ? 1e7 : 0) + x.s;
 r.art = imgs.sort((a, b) => score(b) - score(a)).slice(0, 25).map(x => x.f);
 r.fonts = files.filter(f => /\.(ttf|otf|woff2?)$/i.test(f)).map(rel).slice(0, 10);

@@ -160,6 +160,11 @@ Notes:
 - `install` explains the common failures: no ARM64 code (Unity: Player Settings > Other Settings > Target Architectures > ARM64, which Google Play requires anyway) and a different signing key already installed.
 - Unity WebGL build available? `capture-web.mjs --root <WebGL build folder>` can play it in headless Chrome (the server sends `.br`/`.gz` builds with the right encoding). Not yet tested with a real Unity WebGL build, so check the first frames; if it fails, use the APK.
 
+**Unity project checks before anything else** (detect.mjs reports them):
+- **Git LFS**: if `lfsPointers` > 0, the art/audio files are tiny LFS pointers, not real files. Nothing can be used or built until the user installs Git LFS and runs `git lfs install && git lfs pull`. Ask; don't do it silently.
+- **Editor version**: build only with the exact `unityVersion`. If it isn't installed, ask the user to install it in Unity Hub (with Android Build Support), or build from a **copy** of the project (e.g. `store-assets/work/build/project/`), never the original: opening a project with another version upgrades its files, and even the right version creates `Library/` in the folder it opens.
+- **Orientation `auto`**: Unity allows several orientations; capture in the one the UI is designed for.
+
 **Unity project without any build:** ask the developer to build an APK (File > Build Settings > Android > Build). Building it yourself needs Unity in batch mode, and only with their OK, with the output inside `store-assets/work/build/`.
 
 ## 4. Choose the hero moments
