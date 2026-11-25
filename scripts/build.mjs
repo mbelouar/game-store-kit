@@ -18,8 +18,9 @@ const R = p => path.join(dir, p);
 const brand = JSON.parse(fs.readFileSync(R('brand.json'), 'utf8'));
 const plan = fs.existsSync(R('plan.json')) ? JSON.parse(fs.readFileSync(R('plan.json'), 'utf8')) : {};
 const portrait = (brand.orientation || 'portrait') !== 'landscape';
-// Capacitor games get @capacitor/assets sources (capacitor-assets/), Unity games get Image Asset layers + splash/
-const capacitor = /^capacitor/i.test(brand.engine || '');
+// Same simple output for Capacitor and Unity: android-icon/ (Image Asset / Player Settings layers) + splash/.
+// Optional, only when asked: capacitor-assets/ for the @capacitor/assets CLI (brand.capacitorAssets = true).
+const capAssets = brand.capacitorAssets === true;
 const jobs = [];
 const pngSize = f => { const b = fs.readFileSync(path.resolve(dir, f)); return b.toString('ascii', 1, 4) === 'PNG' ? [b.readUInt32BE(16), b.readUInt32BE(20)] : null; };
 const exists = p => fs.existsSync(R(p));
@@ -28,15 +29,13 @@ const exists = p => fs.existsSync(R(p));
 if (want('icons') && exists('icon/icon.svg')) {
   jobs.push({ template: 'icon/icon.svg', out: R('icon/icon-1024.png'), w: 1024, h: 1024 });
   jobs.push({ template: 'icon/icon.svg', out: R('play-store/icon-512.png'), w: 512, h: 512 });
-  if (capacitor) {
-    // input files for `npx @capacitor/assets generate --android --assetPath store-assets/capacitor-assets`
+  // Android Studio > res > New > Image Asset (Foreground/Background layer -> Path), or Unity Player Settings > Icon
+  if (exists('icon/fg.svg')) jobs.push({ template: 'icon/fg.svg', out: R('android-icon/foreground.png'), w: 1024, h: 1024, transparent: true });
+  if (exists('icon/bg.svg')) jobs.push({ template: 'icon/bg.svg', out: R('android-icon/background.png'), w: 1024, h: 1024 });
+  if (capAssets) {
     jobs.push({ template: 'icon/icon.svg', out: R('capacitor-assets/icon-only.png'), w: 1024, h: 1024 });
     if (exists('icon/fg.svg')) jobs.push({ template: 'icon/fg.svg', out: R('capacitor-assets/icon-foreground.png'), w: 1024, h: 1024, transparent: true });
     if (exists('icon/bg.svg')) jobs.push({ template: 'icon/bg.svg', out: R('capacitor-assets/icon-background.png'), w: 1024, h: 1024 });
-  } else {
-    // Unity: Player Settings > Icon (adaptive layers) or Android Studio > res > New > Image Asset
-    if (exists('icon/fg.svg')) jobs.push({ template: 'icon/fg.svg', out: R('android-icon/foreground.png'), w: 1024, h: 1024, transparent: true });
-    if (exists('icon/bg.svg')) jobs.push({ template: 'icon/bg.svg', out: R('android-icon/background.png'), w: 1024, h: 1024 });
   }
 }
 // render icon first so templates can use it
@@ -70,18 +69,13 @@ if (want('splash')) {
     const kit = path.join(path.dirname(R(sp.template)), 'kit'); fs.mkdirSync(kit, { recursive: true });
     for (const f of ['_base.css', '_base.js', 'scene.js']) fs.copyFileSync(path.join(here, '..', 'templates', f), path.join(kit, f));
   }
-  if (capacitor) {
-    // one 2732x2732 source; @capacitor/assets crops it for every Android screen (keep key elements in the centre)
-    jobs.push({ template: tpl, out: R('capacitor-assets/splash.png'), w: 2732, h: 2732, data: sp });
-  } else {
-    jobs.push({ template: tpl, out: R('splash/splash-1080x1920.png'), w: 1080, h: 1920, data: sp });
-    jobs.push({ template: tpl, out: R('splash/splash-1920x1080.png'), w: 1920, h: 1080, data: sp });
-    jobs.push({ template: tpl, out: R('splash/splash-2732x2732.png'), w: 2732, h: 2732, data: sp });
-  }
+  jobs.push({ template: tpl, out: R('splash/splash-1080x1920.png'), w: 1080, h: 1920, data: sp });
+  jobs.push({ template: tpl, out: R('splash/splash-1920x1080.png'), w: 1920, h: 1080, data: sp });
+  jobs.push({ template: tpl, out: R('splash/splash-2732x2732.png'), w: 2732, h: 2732, data: sp });
 }
 if (jobs.length) run(jobs);
-// dark-mode splash: same key art unless the game provides a dark version (plan.splash.dark = template path)
-if (capacitor && want('splash') && exists('capacitor-assets/splash.png') && !(plan.splash || {}).dark) fs.copyFileSync(R('capacitor-assets/splash.png'), R('capacitor-assets/splash-dark.png'));
+// optional @capacitor/assets splash sources = the 2732 key art (light and dark)
+if (capAssets && want('splash') && exists('splash/splash-2732x2732.png')) for (const n of ['splash', 'splash-dark']) fs.copyFileSync(R('splash/splash-2732x2732.png'), R(`capacitor-assets/${n}.png`));
 execFileSync('python3', [path.join(here, 'finalize.py'), dir], { stdio: 'inherit' });
 
 function run(list) {

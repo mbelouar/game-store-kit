@@ -2,9 +2,9 @@
 // Final step: leave only what's needed to publish on Google Play, and keep the sources hidden for the next run.
 //   store-assets/
 //     play-store/     icon-512.png  feature-graphic-1024x500.png  screenshots/   -> upload in Play Console
-//     capacitor-assets/  (Capacitor) icon-only, icon-foreground, icon-background, splash, splash-dark
-//                        -> npx @capacitor/assets generate --android --assetPath store-assets/capacitor-assets
-//     android-icon/ + splash/  (Unity) icon layers for Player Settings / Image Asset, key-art splash in 3 sizes
+//     android-icon/   foreground.png  background.png  (1024)  -> Android Studio Image Asset / Unity Player Settings icon
+//     splash/         key-art splash: 1080x1920, 1920x1080, 2732x2732
+//     capacitor-assets/  only when asked (brand.capacitorAssets): sources for npx @capacitor/assets generate
 //     .kit/           (hidden) brand.json, plan.json, icon sources, logo/sprites/items, play script, key-art page,
 //                     and only the frames the kit uses -> the next run restores it and keeps the exact same look
 // Usage:

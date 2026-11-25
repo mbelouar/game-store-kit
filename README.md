@@ -8,16 +8,14 @@ store-assets/
     icon-512.png                   -> Play Console: App icon
     feature-graphic-1024x500.png   -> Play Console: Feature graphic
     screenshots/phone-01..08.png   -> Play Console: Phone screenshots
-  capacitor-assets/                (Capacitor) icon + splash sources for the official @capacitor/assets tool
-  android-icon/ + splash/          (Unity) icon layers for Player Settings, key-art splash
+  android-icon/
+    foreground.png  background.png -> Android Studio: res > New > Image Asset (or Unity Player Settings > Icon)
+  splash/
+    splash-1080x1920 / 1920x1080 / 2732x2732 -> designed key-art splash
 ```
+The same output for Capacitor and Unity. Nothing is copied into your project; you apply the icon and splash the way you normally do.
 
-**Capacitor**: apply the icon and splash to your app (all densities, light and dark) from the project root:
-```bash
-npx @capacitor/assets generate --android --assetPath store-assets/capacitor-assets
-find android/app/src/main/res -name "ic_launcher*.webp" -delete
-```
-(`@capacitor/assets` writes every launcher icon as both `.png` and `.webp`, which Android rejects as duplicate resources; the second line fixes it.)
+> **Splash on Android 12+:** Android shows its own system splash (your app icon on a background colour) before the game. In Unity the key-art splash then appears as Unity's splash image. In Capacitor, `splash.png` only shows on Android 11 and older, so set the system splash background colour in your launch theme and, if you like, use the key art as your game's own loading screen. (Capacitor users who prefer the `@capacitor/assets` CLI can ask for its source folder too.)
 
 - **Screenshots** are full-bleed real gameplay (the style Google recommends): zoomed so the action is big, HUD hidden, outlined headlines on the sky, glass feature chips, zoom callouts on key details, and the game's own items bridging from one screenshot into the next. A modern phone-mockup style is available as an option.
 - **Splash and feature graphic** are designed key art: a story moment with the hero, the threat, layered landscapes and dramatic light, built from the game's real characters. Not a logo pasted on a gameplay frame.

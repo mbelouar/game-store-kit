@@ -25,21 +25,19 @@ Scripts live in `~/.claude/skills/game-store-kit/scripts`.
 4. **The skill never modifies the project.** Read the game's files, but never edit, create or delete anything outside `store-assets/`: no copying icons into `android/res`, no `.gitignore` edits, no `npm run build` into `dist/`, no `cap sync`, no Gradle or Unity builds into the project's own folders. If a build is needed to play the game, build a **copy** into `store-assets/work/build/` (Capacitor: `npx vite build --outDir "$PROJECT/store-assets/work/build/web" --emptyOutDir`; Unity: a batch-mode build with its output path under `work/build/`, only with the user's OK). If a build cannot avoid writing into the project (e.g. Android Gradle), ask the user first and say exactly what it will touch.
 5. The folder must be **self-contained and movable**: the user moves `store-assets/` out of the project afterwards. All paths inside it are relative to it, and the last step (`pack.mjs`) leaves only what's needed.
 
-Final contents of `store-assets/` (after pack): **only what's needed to publish on Google Play**:
+Final contents of `store-assets/` (after pack): **only what's needed to publish on Google Play**, the same for Capacitor and Unity:
 ```
-play-store/                        (both engines) -> Play Console > Store listing
+play-store/                        -> Play Console > Store listing
   icon-512.png                     App icon
   feature-graphic-1024x500.png     Feature graphic
   screenshots/phone-01..08.png     Phone screenshots (in order)
-
-capacitor-assets/                  (Capacitor games) sources for the official @capacitor/assets tool
-  icon-only.png  icon-foreground.png  icon-background.png   1024px
-  splash.png  splash-dark.png                               2732px key art (cropped per screen by the tool)
-
-android-icon/                      (Unity games) 1024px icon layers: Player Settings > Icon (adaptive), or Image Asset
-  foreground.png  background.png
-splash/                            (Unity games) key-art splash: 1080x1920, 1920x1080, 2732x2732
+android-icon/                      1024px launcher-icon layers
+  foreground.png  background.png   Android Studio > res > New > Image Asset (Foreground/Background layer -> Path),
+                                   or Unity Player Settings > Icon (adaptive)
+splash/                            designed key-art splash
+  splash-1080x1920.png  splash-1920x1080.png  splash-2732x2732.png
 ```
+Only if the user asks for the `@capacitor/assets` CLI: set `"capacitorAssets": true` in brand.json to also get `capacitor-assets/` (icon-only, icon-foreground, icon-background, splash, splash-dark).
 Plus a hidden `.kit/` (invisible in Finder) holding the sources: brand.json, plan.json, icon layers and concepts, logo/sprites/items, the play script, the key-art page, and only the frames the kit uses. That's what makes the next run look exactly the same. During a run, everything lives visibly in `store-assets/` (plus scratch in `work/`). Pack hides the sources and deletes the rest. `pack.mjs --no-kit` drops the sources too (the next run starts from scratch); `--full` keeps everything visible.
 
 **Golden rule — one brand bible, kept across runs.** `store-assets/brand.json` is the single source of truth (palette, fonts, style). Every template reads it, so icon, splash, feature graphic and screenshots share the same colors, type, background system and grain.
@@ -85,7 +83,7 @@ If missing, create it. Pull colors from the game itself, not your imagination:
 }
 ```
 Rules:
-- `engine`: copy it from detect.mjs (`capacitor` or `unity`). It decides the icon/splash output (`capacitor-assets/` vs `android-icon/` + `splash/`).
+- `engine`: copy it from detect.mjs (`capacitor` or `unity`); used in the hand-off instructions.
 - `primary` = the game's dominant saturated hue, `dark` = a deep shade of it (never pure #000), `accent` = the hottest highlight in the game (used for highlighted words, glow, badges), `secondary` = a supporting hue for background blobs. Check contrast: light text on primary/dark must be readable.
 - Fonts are Google Fonts family names (or `displayFile`/`bodyFile` paths to the game's own font files, relative to `store-assets/`). Pick a display face that matches the genre: chunky rounded (Lilita One, Luckiest Guy, Titan One, Baloo 2) for casual; condensed/techy (Bebas Neue, Russo One, Orbitron, Chakra Petch) for action/sci-fi; serif display (Cinzel, Cormorant) for fantasy/RPG; pixel (Press Start 2P, Silkscreen) only for pixel-art games. If the game ships a font, prefer it.
 - `logo`: path to a transparent wordmark PNG if the game has one; otherwise titles are set in the display font. **If the logo is drawn in the DOM (SVG/HTML title), grab it for real**:
@@ -255,10 +253,10 @@ find "$PROJECT" -newer "$PROJECT/store-assets/brand.json" -not -path "$PROJECT/s
 GSK_PROJECT="$PROJECT" node ~/.claude/skills/game-store-kit/scripts/pack.mjs
 ```
 4. Tell the user where each file goes (the table above). Do **not** copy anything into the project, and don't run these commands yourself: the developer runs them when they choose.
-   - **Capacitor**: from the project root
-     ```bash
-     npx @capacitor/assets generate --android --assetPath store-assets/capacitor-assets
-     find android/app/src/main/res -name "ic_launcher*.webp" -delete
-     ```
-     The tool writes every launcher icon (adaptive layers included) and splash for all densities, light and dark. It writes each launcher icon as both `.png` and `.webp`, and Android fails with "Duplicate resources", so the second command removes the `.webp` copies (tested: the build passes after it). Then sync in Android Studio and build the AAB.
-   - **Unity**: Player Settings > Android > Icon: adaptive foreground/background from `android-icon/`, legacy/round from `play-store/icon-512.png`. Splash: Player Settings > Splash Image with `splash/`.
+   - **Icon (both engines)**: Android Studio > app > res > New > Image Asset: Foreground layer > Path = `android-icon/foreground.png`, Background layer > Path = `android-icon/background.png` (the subject already sits inside the safe zone, so keep the default resize).
+   - **Splash, Capacitor**: on **Android 12+ (most devices)** Android shows its own system splash: the app icon (from Image Asset) centred on a background colour. That's what players see (tested on an API 36 emulator); Capacitor's `splash.png` only appears on Android 11 and older. So:
+     - background colour: one line in the launch theme (`AppTheme.NoActionBarLaunch` in `res/values/styles.xml`): `<item name="windowSplashScreenBackground">#xxxxxx</item>` with the brand's `dark` or `primary` colour.
+     - older devices (optional): put `splash/splash-2732x2732.png` in `res/drawable-nodpi/splash.png` and delete the old `splash.png` files in `drawable`, `drawable-port-*` and `drawable-land-*`. Use `drawable-nodpi`, never plain `drawable`, or Android scales the image up to 4× on high-density phones (tested: no crash with nodpi).
+     - the key art can still be seen by everyone as the game's own loading/title screen, but only if the developer adds it to their game code. Mention it; don't do it.
+     (If the user asked for `capacitorAssets`: `npx @capacitor/assets generate --android --assetPath store-assets/capacitor-assets`, then `find android/app/src/main/res -name "ic_launcher*.webp" -delete`, because the tool writes each launcher icon as both `.png` and `.webp` and Android rejects the duplicates.)
+   - **Unity**: Player Settings > Android > Icon: adaptive foreground/background from `android-icon/`, legacy/round from `play-store/icon-512.png`. Splash: Unity shows its own splash after Android's system splash, so the key art is seen by everyone: Player Settings > Splash Image > Logos/Background with a file from `splash/` (on Unity versions before Unity 6, the free plan always adds the "Made with Unity" logo).
