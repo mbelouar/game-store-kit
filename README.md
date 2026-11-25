@@ -12,6 +12,7 @@ store-assets/
     store-listing.md               -> Play Console: app name, short + full description, release notes (checked against Play's limits and policy)
     publish-checklist.md           -> what Play checks at upload: target API 36, 64-bit + 16 KB native code, version code, permissions, unused plugins
     locales/<lang>/                -> optional translations: screenshots + store listing per language (RTL Arabic/Hebrew, script-aware fonts)
+    experiments/<name>/            -> optional A/B variants (screenshot order/captions/style, icon, feature graphic, short description) for Play's store listing experiments
   android-icon/
     foreground.png  background.png -> Android Studio: res > New > Image Asset (or Unity Player Settings > Icon)
   splash/

@@ -35,6 +35,7 @@ play-store/                        -> Play Console > Store listing
   store-listing.md                 App name, short + full description, release notes, category, tags (paste-ready)
   publish-checklist.md             Publish-readiness report: target SDK, 64-bit/16 KB, version code, permissions, plugins
   locales/<lang>/                  per language: screenshots/ (+ tablet sets), store-listing.md, feature graphic if its text was translated
+  experiments/<name>/              A/B variants for Play's store listing experiments (only what each variant changes + experiment.md)
 android-icon/                      1024px launcher-icon layers
   foreground.png  background.png   Android Studio > res > New > Image Asset (Foreground/Background layer -> Path),
                                    or Unity Player Settings > Icon (adaptive)
@@ -222,6 +223,16 @@ Paths are relative to `store-assets/`.
 }
 ```
 Use Play's language codes (`fr-FR`, `es-ES`, `es-419`, `pt-BR`, `de-DE`, `ar`, `tr-TR`, `ja-JP`, `ko-KR`, `zh-CN`, `hi-IN`, `ru-RU`...). Arabic, Persian, Urdu and Hebrew render right to left. Each script gets a display/body font that has its letters (Arabic: Lalezar + Cairo; Hebrew/Cyrillic: Rubik; Japanese: Dela Gothic One; Korean: Black Han Sans; Chinese: ZCOOL KuaiLe; Hindi: Baloo 2; Thai: Kanit), with no letter-spacing or forced uppercase. Override with `brand.fonts.locales = { "ar": { "display": "...", "body": "..." } }`. Write translations as a native copywriter: short, punchy, the same meaning and highlight, not word-for-word. Keep game names (bosses, worlds) as the game itself shows them. Look at every rendered language: long words must not overflow, and highlights must land on the right word.
+
+**A/B variants** (Play Console > Store listing experiments): only when the user asks, or offer 1–2 at hand-off. Each variant tests **one idea** against the current listing and renders only what it changes:
+```json
+"variants": {
+  "B": { "hypothesis": "Leading with variety beats leading with the boss chase", "order": [3, 1, 2, 4, 5],
+         "screenshots": [{ "headline": "*6* eras to explore" }] },
+  "C": { "hypothesis": "A sky-blue icon stands out next to other runners", "icon": "icon/concepts/E-rexy-sky.svg" }
+}
+```
+`order` (1-based) reorders the shots, `screenshots` overrides texts in the new order, `style` / `colors` override the brand look (e.g. `{ "device": "phone" }`), `icon` points at another icon concept, `feature` overrides the feature graphic. Text variants live in `listing.json` `"variants": { "D": { "short": "..." } }` and are checked like the main listing. Good first tests: the first screenshot (it decides most installs), the icon, and the short description.
 
 **Make every screenshot feel full and premium, never empty** (each one combines these):
 - **Headline** (2–5 words) and optionally **chips**: 1–3 glass pills with a real item icon ("Volcano Valley", "3 giant bosses", "Shield · Magnet · Rocket"). Use them on about half the shots.

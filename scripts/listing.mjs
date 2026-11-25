@@ -127,6 +127,16 @@ for (const lang of langs) {
     `- Phone screenshots: \`screenshots/\` (in this folder; upload them as this language's graphics)${hasTablets(base) ? '\n- Tablet screenshots: `screenshots-7inch/`, `screenshots-10inch/`' : ''}${fs.existsSync(R(base + '/feature-graphic-1024x500.png')) ? '\n- Feature graphic: `feature-graphic-1024x500.png`' : '\n- Feature graphic and icon: same as the default language'}`));
 }
 
+// A/B text variants: listing.json "variants": { "B": { "short": "...", "full": "..." } } -> appended to experiments/<name>/experiment.md
+for (const [name, v] of Object.entries(L.variants || {})) {
+  for (const [k, max] of Object.entries({ short: 80, full: 4000 })) if (v[k] && [...v[k]].length > max) errors.push(`${k}: ${[...v[k]].length}/${max} characters`);
+  scan(v.short, 'short description', 'text'); scan(v.full, 'full description', 'text');
+  const f = R(`play-store/experiments/${name}/experiment.md`); fs.mkdirSync(path.dirname(f), { recursive: true });
+  const prev = fs.existsSync(f) ? fs.readFileSync(f, 'utf8').replace(/\n## Variant text[\s\S]*$/, '') : `# Store listing experiment: variant ${name}\n\nPlay Console > Grow users > Store listing experiments > Create experiment (default language).\n`;
+  fs.writeFileSync(f, prev + `\n## Variant text\n${v.short ? `\n### Short description (${[...v.short].length}/80)\n${v.short}\n` : ''}${v.full ? `\n### Full description (${[...v.full].length}/4000)\n${v.full}\n` : ''}`);
+  report(`variant ${name}`, f);
+}
+
 let totalErr = 0;
 for (const r of results) {
   if (results.length > 1) console.log(`\n[${r.label}]`);

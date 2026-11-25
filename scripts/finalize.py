@@ -37,13 +37,14 @@ check(os.path.join(d, "play-store/icon-512.png"), 512, 512, 1024)
 check(os.path.join(d, "play-store/feature-graphic-1024x500.png"), 1024, 500, 15 * 1024, opaque=True)
 # screenshots: 9:16 / 16:9, 1080-7680 px, <= 8 MB; phone 2-8 required; tablets 4-8 to be featured on tablets
 sets = {}
-bases = [("", os.path.join(d, "play-store"))] + [(os.path.basename(x) + " ", x) for x in sorted(glob.glob(os.path.join(d, "play-store", "locales", "*")))]
+bases = [("", os.path.join(d, "play-store"))] + [(os.path.basename(x) + " ", x) for x in sorted(glob.glob(os.path.join(d, "play-store", "locales", "*")))] + [("variant " + os.path.basename(x) + " ", x) for x in sorted(glob.glob(os.path.join(d, "play-store", "experiments", "*")))]
 for prefix, base in bases:
     for name, folder in (("phone", "screenshots"), ("7-inch tablet", "screenshots-7inch"), ("10-inch tablet", "screenshots-10inch")):
         files = sorted(glob.glob(os.path.join(base, folder, "*.png")) + glob.glob(os.path.join(base, folder, "*.jpg")))
         if files or not prefix: sets[prefix + name] = [check(p, max_kb=8 * 1024, ratio=16 / 9 + 0.01, opaque=True, bounds=(1080, 7680)) for p in files]
     fg = os.path.join(base, "feature-graphic-1024x500.png")
     if prefix: check(fg, 1024, 500, 15 * 1024, opaque=True)
+    if prefix.startswith("variant"): check(os.path.join(base, "icon-512.png"), 512, 512, 1024)
 shots = [p for v in sets.values() for p in v]
 phone = sets["phone"]
 for name, files in sets.items():
