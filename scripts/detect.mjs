@@ -10,7 +10,7 @@ const read = p => { try { return fs.readFileSync(path.join(root, p), 'utf8'); } 
 const SKIP = new Set(['node_modules', '.git', 'store-assets', 'Library', 'Temp', 'Logs', 'obj', 'UserSettings', '.gradle', '.idea', '.vs']);
 
 function walk(dir, depth = 0, out = []) {
-  if (depth > 7 || out.length > 6000) return out;
+  if (depth > 9 || out.length > 25000) return out;
   let entries = []; try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return out; }
   for (const e of entries) {
     if (SKIP.has(e.name) || e.name.startsWith('.')) continue;
@@ -36,6 +36,19 @@ if (has('ProjectSettings/ProjectSettings.asset')) {
   const o = (ps.match(/defaultScreenOrientation:\s*(\d)/) || [])[1];   // 0 portrait, 1 upside down, 2/3 landscape, 4 auto
   if (o) r.orientation = ['portrait', 'portrait', 'landscape', 'landscape', 'auto'][+o] || 'unknown';
   if (r.orientation === 'auto') r.notes.push('Unity auto-rotation: check which orientations are allowed (allowedAutorotateTo*) and look at the first frames.');
+  // Art already wired in Player Settings (icons, splash logos/backgrounds) is stored as GUIDs: resolve them to files.
+  const metas = new Map();
+  for (const f of files) if (f.endsWith('.meta') && /\.(png|jpe?g|psd|tga|tif|tiff|svg|exr)\.meta$/i.test(f)) {
+    const g = (fs.readFileSync(f, 'utf8').match(/^guid:\s*([0-9a-f]{32})/m) || [])[1]; if (g) metas.set(g, rel(f.slice(0, -5)));
+  }
+  let key = ''; const used = new Map();
+  for (const line of ps.split('\n')) {
+    const k = line.match(/^\s*-?\s*(m_\w+|logo|m_Icon):/); if (k && !/fileID/.test(line.split(':')[0])) key = k[1];
+    for (const m of line.matchAll(/guid:\s*([0-9a-f]{32})/g)) if (metas.has(m[1])) used.set(metas.get(m[1]), key.replace(/^m_/, ''));
+  }
+  r.unityArt = [...used].map(([p, usedAs]) => ({ path: p, usedAs }));
+  if (r.unityArt.length) r.notes.push('Unity Player Settings already reference art (unityArt): look at these first; they are usually the real icon, logo and splash art.');
+  r.unitySprites = files.filter(f => /^Assets\//.test(rel(f)) && /\.(png|psd)$/i.test(f) && /(player|hero|char|enemy|boss|coin|gem|logo|title|icon|item|power)/i.test(path.basename(f))).map(rel).slice(0, 40);
   // Playable builds the developer already made (never build into the project without asking)
   const webgl = files.filter(f => /\.loader\.js$/.test(f) && /Build/.test(f)).map(f => path.dirname(path.dirname(f)));
   if (webgl.length) r.webEntry = rel(webgl[0]);
