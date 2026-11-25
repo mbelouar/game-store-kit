@@ -37,9 +37,14 @@ android-icon/
 splash/
   splash-1080x1920.png  splash-1920x1080.png  splash-2732x2732.png   designed key-art splash
 ```
-During a run, everything else (brand.json, plan.json, icon sources, frames, Android/splash renders, preview.html, `work/`) lives in `store-assets/` and is deleted by pack. `pack.mjs --full` keeps it all, only if the user asks to keep sources for later rebuilds.
+Plus a hidden `.kit/` (invisible in Finder) holding the sources: brand.json, plan.json, icon layers and concepts, logo/sprites/items, the play script, the key-art page, and only the frames the kit uses. That's what makes the next run look exactly the same. During a run, everything lives visibly in `store-assets/` (plus scratch in `work/`). Pack hides the sources and deletes the rest. `pack.mjs --no-kit` drops the sources too (the next run starts from scratch); `--full` keeps everything visible.
 
-**Golden rule — one brand bible.** `store-assets/brand.json` is the single source of truth (palette, fonts, style, captions). Every template reads it, so icon, splash, feature graphic and screenshots share the same colors, type, background system and grain. If `brand.json` already exists (a `--full` pack), **reuse it unchanged** unless the user asks for a new look. Otherwise derive it again from the game with the same rules (logo colors, mascot, genre font), which gives the same look.
+**Golden rule — one brand bible, kept across runs.** `store-assets/brand.json` is the single source of truth (palette, fonts, style). Every template reads it, so icon, splash, feature graphic and screenshots share the same colors, type, background system and grain.
+**At the start of every run**, if `store-assets/.kit/` exists (detect.mjs says so), first run:
+```bash
+GSK_PROJECT="$PROJECT" node ~/.claude/skills/game-store-kit/scripts/pack.mjs --restore
+```
+Then **reuse brand.json, the icon and the key-art page unchanged** unless the user asks for a new look. Re-capture gameplay and update `plan.json` (new frames, new features) only where the game changed. The user should get an update that clearly belongs to the same game, not a redesign.
 
 ## 0. Setup (first run only)
 
@@ -239,8 +244,8 @@ Tweak `brand.json` (colors/style) or `plan.json` (captions/frames/crops/layout),
 ```bash
 find "$PROJECT" -newer "$PROJECT/store-assets/brand.json" -not -path "$PROJECT/store-assets/*" -not -path "*/node_modules/*" -type f | head
 ```
-2. Show the user the result (send the screenshots, feature graphic and icon, or open `preview.html`) and say which icon concept you chose and why. Make changes they ask for now, because sources are deleted next.
-3. Pack. Only the Play Store files, the Image Asset sources and the splash remain:
+2. Show the user the result (send the screenshots, feature graphic and icon, or open `preview.html`) and say which icon concept you chose and why. Make the changes they ask for now (later changes need `pack.mjs --restore` first).
+3. Pack. The Play Store files, the Image Asset sources and the splash stay visible; the sources move into the hidden `.kit/` for the next run:
 ```bash
 GSK_PROJECT="$PROJECT" node ~/.claude/skills/game-store-kit/scripts/pack.mjs
 ```
