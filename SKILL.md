@@ -1,9 +1,11 @@
 ---
 name: game-store-kit
-description: Play the game in the current folder and produce a premium, fully consistent store kit — Google Play screenshots, feature graphic, app icon (Play 512, Android adaptive + mipmaps, iOS 1024) and splash screens. Use when the user runs /game-store-kit, or asks for "store assets", "Play Store screenshots", "app icon and splash", "store listing graphics" or "make my game look premium" for a game project (web/Phaser/Pixi/Three, Flutter, Unity, Godot, Android, React Native/Expo).
+description: Play a Capacitor or Unity Android game and produce a premium, fully consistent Google Play kit: full-bleed captioned screenshots, a key-art feature graphic and splash, the 512 app icon and launcher-icon layers. Use when the user runs /game-store-kit or asks for Play Store screenshots, store graphics, an app icon or splash, or to make their game's store listing look premium. Supports Capacitor (web games wrapped for Android) and Unity games, Google Play only.
 ---
 
 # Game Store Kit
+
+**Scope:** Capacitor games (web games wrapped with Capacitor) and Unity games, Android, **Google Play only**. If `detect.mjs` reports `unsupported`, tell the user and stop.
 
 Run inside a game's folder. You **play the game for real**, capture the best moments, and turn them into a store kit that looks like one art director made every piece.
 
@@ -20,7 +22,7 @@ Scripts live in `~/.claude/skills/game-store-kit/scripts`.
    Tell the user this path in one line before starting. Prefix every script call with `GSK_PROJECT="$PROJECT"` (shell state does not persist between commands) and use absolute paths under `$PROJECT/store-assets` for every file you write.
 2. Never write outputs to the home folder, `/tmp`, the scratchpad, the skill's own folder, or any other project. If you `cd` (e.g. into a build dir), outputs still go to `$PROJECT/store-assets`.
 3. **Logo work too:** when using the `logo-generator` skill, put its concepts, showcase page and PNG exports in `$PROJECT/store-assets/icon/concepts/` — not in a `logos/` folder or anywhere else.
-4. **The skill never modifies the project.** Read the game's files, but never edit, create or delete anything outside `store-assets/`: no copying icons into `android/res`, no `.gitignore` edits, no `npm run build` into `dist/`, no `cap sync`, no Gradle/Flutter/Unity/Godot builds into the project's own folders. If a build is needed to play the game, build a **copy** into `store-assets/work/build/` (e.g. `npx vite build --outDir "$PROJECT/store-assets/work/build/web" --emptyOutDir`, `flutter build web --output ...`, a Godot export path under `work/build/`). If a build cannot avoid writing into the project (e.g. Android Gradle), ask the user first and say exactly what it will touch.
+4. **The skill never modifies the project.** Read the game's files, but never edit, create or delete anything outside `store-assets/`: no copying icons into `android/res`, no `.gitignore` edits, no `npm run build` into `dist/`, no `cap sync`, no Gradle or Unity builds into the project's own folders. If a build is needed to play the game, build a **copy** into `store-assets/work/build/` (Capacitor: `npx vite build --outDir "$PROJECT/store-assets/work/build/web" --emptyOutDir`; Unity: a batch-mode build with its output path under `work/build/`, only with the user's OK). If a build cannot avoid writing into the project (e.g. Android Gradle), ask the user first and say exactly what it will touch.
 5. The folder must be **self-contained and movable**: the user moves `store-assets/` out of the project afterwards. All paths inside it are relative to it, and the last step (`pack.mjs`) leaves only what's needed.
 
 Final contents of `store-assets/` (after pack): **only what's needed to publish on Google Play**:
@@ -35,7 +37,7 @@ android-icon/
 splash/
   splash-1080x1920.png  splash-1920x1080.png  splash-2732x2732.png   designed key-art splash
 ```
-During a run, everything else (brand.json, plan.json, icon sources, frames, Android/iOS/splash renders, preview.html, `work/`) lives in `store-assets/` and is deleted by pack. `pack.mjs --full` keeps it all, only if the user asks to keep sources for later rebuilds.
+During a run, everything else (brand.json, plan.json, icon sources, frames, Android/splash renders, preview.html, `work/`) lives in `store-assets/` and is deleted by pack. `pack.mjs --full` keeps it all, only if the user asks to keep sources for later rebuilds.
 
 **Golden rule — one brand bible.** `store-assets/brand.json` is the single source of truth (palette, fonts, style, captions). Every template reads it, so icon, splash, feature graphic and screenshots share the same colors, type, background system and grain. If `brand.json` already exists (a `--full` pack), **reuse it unchanged** unless the user asks for a new look. Otherwise derive it again from the game with the same rules (logo colors, mascot, genre font), which gives the same look.
 
@@ -50,7 +52,7 @@ Needs Google Chrome (used headless), Node 18+, Python 3 with Pillow (`pip3 insta
 
 1. `node ~/.claude/skills/game-store-kit/scripts/detect.mjs "$PROJECT"` → engine, name, orientation, package id, web build, APKs, art and fonts.
 2. Read the README, the main scene/game loop, input handling and menus. Write down: **controls**, **how to start a run**, **what an exciting moment looks like** (combo, boss, big explosion, level up, full board, near-win), **what progression exists** (levels, upgrades, characters, worlds), and anything you should avoid capturing (debug overlays, dev menus, ads).
-3. Look at the hero art (Read the images detect listed): character, key objects, existing logo, fonts. **Beware template placeholders**: Capacitor/Flutter/Android starter icons and splashes (e.g. the blue Capacitor "X") are not the game's brand. Ignore them.
+3. Look at the hero art (Read the images detect listed): character, key objects, existing logo, fonts. **Beware template placeholders**: Capacitor starter icons and splashes (the blue Capacitor "X") and Unity's default icon are not the game's brand. Ignore them.
 4. **Verify orientation** from detect *and* the first captured frame. If the game is letterboxed (capture-web aborts with `⚠ ORIENTATION`), switch `--landscape` on or off. Never build a kit from letterboxed frames.
 5. **Find the hooks you'll drive it with.** Look for: an existing demo/attract-mode AI (e.g. `ai()`, `autoplay`, `bot`), debug flags (`?debug`, `window.__debug`), save keys in localStorage, start functions (`startGame(mode, opts)`), and menu actions (`data-act`, button ids). If the game code is wrapped in a closure/IIFE, globals won't be reachable from `page.evaluate`: use the debug hook (`--query debug`) or click its own UI buttons.
 
@@ -88,7 +90,7 @@ Rules:
 
 Aim for **60–200 frames** from real play across different moments. capture-web defaults to a modern phone screen (402×874 @3x = 1206×2622, 19.5:9; landscape 2622×1206), so frames fill the phone mockup exactly.
 
-**Web builds** (web games, or Flutter/Godot/Unity web export — build one if needed, see `buildHints` from detect):
+**Capacitor games** (and Unity games that have a WebGL build): play the web build in headless Chrome.
 1. Write `store-assets/work/play.mjs` tailored to THIS game from what you learned in step 1:
 ```js
 export async function before({ page }) {                // before load: seed a save so the tutorial is skipped and content is unlocked
@@ -112,13 +114,13 @@ GSK_PROJECT="$PROJECT" node ~/.claude/skills/game-store-kit/scripts/capture-web.
 ```
 3. If the frames show the game didn't start, died instantly or is stuck on a menu: fix `play.mjs` and re-run. Check `raw/_console.log` for errors. Several short sessions (different levels/modes) beat one long one.
 
-**Android builds** (native, Unity/Flutter/RN APKs): build or find the APK, write a `store-assets/work/plan.txt` of real moves (`tap X Y`, `swipe ...`, `hold X Y MS`, `wait MS`, `shot TAG`), then:
+**Unity games** (APK/AAB): use the build the developer already made (`apk` from detect), write a `store-assets/work/plan.txt` of real moves (`tap X Y`, `swipe ...`, `hold X Y MS`, `wait MS`, `shot TAG`), then:
 ```bash
 GSK_PROJECT="$PROJECT" bash ~/.claude/skills/game-store-kit/scripts/capture-android.sh --package <id> --apk <apk> --plan "$PROJECT"/store-assets/work/plan.txt --out "$PROJECT"/store-assets/work/raw --duration 120
 ```
 It boots the emulator if needed and enables demo mode (9:41, full battery, no notifications). For tricky games you can also drive the emulator interactively: take `adb exec-out screencap -p` shots, look at them, decide the next move.
 
-**Unity/Godot editor-only projects:** build to Web if a Web export exists, else Android; ask the user only if neither build works.
+**Unity project without any build:** ask the developer to build an APK (File > Build Settings > Android > Build). Building it yourself needs Unity in batch mode, and only with their OK, with the output inside `store-assets/work/build/`.
 
 ## 4. Choose the hero moments
 
@@ -208,7 +210,6 @@ store-assets/
   play-store/icon-512.png  feature-graphic-1024x500.png  screenshots/phone-01..08.png (tablet-* if enabled)
   android/res/mipmap-*/ic_launcher{,_round,_foreground,_background,_monochrome}.png
   android/res/mipmap-anydpi-v26/ic_launcher.xml   android/res/drawable-nodpi/splash_icon.png
-  ios/AppIcon-1024.png
   splash/splash-1080x1920.png  splash-1920x1080.png  splash-2732x2732.png
   android-icon/foreground.png  background.png
   preview.html            (gallery + spec check)

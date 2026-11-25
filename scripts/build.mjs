@@ -26,7 +26,6 @@ const exists = p => fs.existsSync(R(p));
 if (want('icons') && exists('icon/icon.svg')) {
   jobs.push({ template: 'icon/icon.svg', out: R('icon/icon-1024.png'), w: 1024, h: 1024 });
   jobs.push({ template: 'icon/icon.svg', out: R('play-store/icon-512.png'), w: 512, h: 512 });
-  jobs.push({ template: 'icon/icon.svg', out: R('ios/AppIcon-1024.png'), w: 1024, h: 1024 });
   // sources for Android Studio > res > New > Image Asset (Foreground layer / Background layer -> Path)
   if (exists('icon/fg.svg')) jobs.push({ template: 'icon/fg.svg', out: R('android-icon/foreground.png'), w: 1024, h: 1024, transparent: true });
   if (exists('icon/bg.svg')) jobs.push({ template: 'icon/bg.svg', out: R('android-icon/background.png'), w: 1024, h: 1024 });

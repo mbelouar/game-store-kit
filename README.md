@@ -18,8 +18,11 @@ store-assets/
 - **Splash and feature graphic** are designed key art: a story moment with the hero, the threat, layered landscapes and dramatic light, built from the game's real characters. Not a logo pasted on a gameplay frame.
 - Everything shares one look (palette, fonts, outlines, light) taken from your game's own logo and characters.
 
+## Scope
+**Capacitor** games (web games wrapped with Capacitor) and **Unity** games, **Android**, **Google Play** only. Narrow on purpose, so every step is tested and works.
+
 ## How it works
-1. **Understands the game**: detects the engine (web/Phaser/Pixi/Three, Capacitor, Flutter, Unity, Godot, Android, React Native/Expo), orientation, controls, bosses, worlds and progression.
+1. **Understands the game**: detects Capacitor or Unity, orientation, controls, bosses, worlds and progression.
 2. **Plays it for real**: headless Chrome for web builds, or the Android emulator via adb. Claude writes a play script for your specific game, and uses the game's own demo AI or debug hooks when it has them.
 3. **Picks hero moments**: scores the frames, drops duplicates and favours variety across worlds and modes.
 4. **Takes real art from the game**: grabs your in-game logo and renders your characters at high resolution, then designs the icon around your mascot.

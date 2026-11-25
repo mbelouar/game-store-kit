@@ -30,7 +30,6 @@ def check(p, w=None, h=None, max_kb=None, ratio=None, opaque=False):
 
 check(os.path.join(d, "play-store/icon-512.png"), 512, 512, 1024)
 check(os.path.join(d, "play-store/feature-graphic-1024x500.png"), 1024, 500, 15 * 1024, opaque=True)
-check(os.path.join(d, "ios/AppIcon-1024.png"), 1024, 1024, opaque=True)
 shots = sorted(glob.glob(os.path.join(d, "play-store/screenshots/*.png")))
 for p in shots: check(p, max_kb=8 * 1024, ratio=2.0, opaque=True)
 phone = [p for p in shots if "phone" in os.path.basename(p)]

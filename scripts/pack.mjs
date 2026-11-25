@@ -4,7 +4,7 @@
 //     play-store/     icon-512.png  feature-graphic-1024x500.png  screenshots/   -> upload in Play Console
 //     android-icon/   foreground.png  background.png  (1024)                     -> Android Studio > res > New > Image Asset
 //     splash/         designed key-art splash: portrait, landscape, 2732 square
-// Everything else (brand.json, plan.json, sources, frames, android/ios/splash renders, preview, work/) is deleted.
+// Everything else (brand.json, plan.json, sources, frames, android/splash renders, preview, work/) is deleted.
 // --full keeps everything (for later rebuilds with the same look).
 // Usage: node pack.mjs [--dir store-assets] [--full]
 import fs from 'node:fs';
