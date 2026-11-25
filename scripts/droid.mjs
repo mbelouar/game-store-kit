@@ -154,7 +154,7 @@ if (cmd === 'boot') {
   sh('am', 'force-stop', pkg);
   sh('monkey', '-p', pkg, '-c', 'android.intent.category.LAUNCHER', '1');
   // ready = the app has focus, the screen moved on from the first picture (system/engine splash, "Made with Unity",
-  // loading) and then stayed stable for 2 checks; or it stayed stable for 5 checks (games without a splash)
+  // loading) and then stayed stable for 2 checks; or it never changed for ~10 s (games without a splash)
   const t0 = Date.now(); let focused = false, drawing = false, first = null, prev = null, stable = 0, changed = false;
   const tmp = path.join(os.tmpdir(), 'gsk-launch.png');
   while (Date.now() - t0 < wait) {
@@ -165,7 +165,8 @@ if (cmd === 'boot') {
         if (!first) first = g; else if (differ(g, first)) changed = true;
         stable = prev && !differ(g, prev) ? stable + 1 : 0; prev = g;
         drawing = contentScore(tmp) > 25;
-        if (drawing && ((changed && stable >= 2) || stable >= 5)) break;
+        // a splash can sit unchanged for many seconds (first launch, loading): only accept "never changed" after ~10 s
+        if (drawing && ((changed && stable >= 2) || stable >= 12)) break;
       } catch { }
     }
     await sleep(800);
