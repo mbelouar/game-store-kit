@@ -122,11 +122,37 @@ GSK_PROJECT="$PROJECT" node ~/.claude/skills/game-store-kit/scripts/capture-web.
 ```
 3. If the frames show the game didn't start, died instantly or is stuck on a menu: fix `play.mjs` and re-run. Check `raw/_console.log` for errors. Several short sessions (different levels/modes) beat one long one.
 
-**Unity games** (APK/AAB): use the build the developer already made (`apk` from detect), write a `store-assets/work/plan.txt` of real moves (`tap X Y`, `swipe ...`, `hold X Y MS`, `wait MS`, `shot TAG`), then:
+**Unity games** (APK): play the developer's existing APK on the Android emulator with `droid.mjs`. Unity has no JavaScript hooks, so you play by **looking**: take a screenshot, decide, act, repeat. Coordinates are pixels or percentages (`tap 50% 80%`), so they work on any screen size.
 ```bash
-GSK_PROJECT="$PROJECT" bash ~/.claude/skills/game-store-kit/scripts/capture-android.sh --package <id> --apk <apk> --plan "$PROJECT"/store-assets/work/plan.txt --out "$PROJECT"/store-assets/work/raw --duration 120
+D=~/.claude/skills/game-store-kit/scripts/droid.mjs; RAW="$PROJECT/store-assets/work/raw"
+node $D boot --headless                 # start (or reuse) the emulator; prints Android version and screen size
+node $D install <path/to/game.apk>      # an .aab can't be installed: ask for an APK
+node $D demo on                         # 9:41, full battery, full signal, no notifications
+node $D launch <package.id>             # waits past the system splash / "Made with Unity" / loading until the game settles
+node $D shot "$RAW/home.png" --view     # Read the .view.png: a small copy with a 10% grid to read coordinates from
+node $D step tap 50% 73% --out "$RAW" --frames 2 --gap 500   # act, then capture the result (+ .view.png of the last frame)
 ```
-It boots the emulator if needed and enables demo mode (9:41, full battery, no notifications). For tricky games you can also drive the emulator interactively: take `adb exec-out screencap -p` shots, look at them, decide the next move.
+Loop `step` (look → decide → act) through menus, tutorials and into real gameplay, and to reach specific moments (a boss, a new world, the shop). Once you know the game's rhythm, write `store-assets/work/plan.txt` and let it play while frames are captured in the background:
+```
+# plan.txt (coordinates in % or px)
+repeat 6 {
+  tap 50% 50%
+  wait 700
+}
+swipe 30% 70% 70% 70% 200
+hold 50% 60% 900
+shot boss
+```
+```bash
+node $D play --plan "$PROJECT/store-assets/work/plan.txt" --out "$RAW" --duration 90 --interval 1.2
+node $D demo off && node $D stop        # stop only shuts down an emulator droid.mjs started
+```
+Notes:
+- Frames are captured **without** the status and navigation bars (cropped automatically when visible; full-screen games are untouched). `--no-crop` keeps them.
+- Frames are the emulator's real resolution (Pixel 9 Pro: 1280×2856 minus bars). The full-bleed screenshot layout zooms them anyway.
+- `adb` input has ~100–200 ms latency: for reflex-heavy moments, capture many frames (`play` with a short `--interval`) and let `pick.py` find the good ones, rather than trying to time a single shot.
+- `install` explains the common failures: no ARM64 code (Unity: Player Settings > Other Settings > Target Architectures > ARM64, which Google Play requires anyway) and a different signing key already installed.
+- Unity WebGL build available? `capture-web.mjs --root <WebGL build folder>` can play it in headless Chrome (the server sends `.br`/`.gz` builds with the right encoding). Not yet tested with a real Unity WebGL build, so check the first frames; if it fails, use the APK.
 
 **Unity project without any build:** ask the developer to build an APK (File > Build Settings > Android > Build). Building it yourself needs Unity in batch mode, and only with their OK, with the output inside `store-assets/work/build/`.
 

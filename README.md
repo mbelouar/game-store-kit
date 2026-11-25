@@ -26,7 +26,7 @@ The same output for Capacitor and Unity. Nothing is copied into your project; yo
 
 ## How it works
 1. **Understands the game**: detects Capacitor or Unity, orientation, controls, bosses, worlds and progression.
-2. **Plays it for real**: headless Chrome for web builds, or the Android emulator via adb. Claude writes a play script for your specific game, and uses the game's own demo AI or debug hooks when it has them.
+2. **Plays it for real**: headless Chrome for Capacitor web builds; the Android emulator for Unity APKs, where Claude plays by looking at the screen and tapping, or with a scripted plan. Claude writes a play script for your specific game, and uses the game's own demo AI or debug hooks when it has them.
 3. **Picks hero moments**: scores the frames, drops duplicates and favours variety across worlds and modes.
 4. **Takes real art from the game**: grabs your in-game logo and renders your characters at high resolution, then designs the icon around your mascot.
 5. **Renders and checks everything** with HTML templates, reviews its own output and fixes problems.
@@ -55,7 +55,7 @@ Ask for changes (captions, frames, icon concept) before it packs. To keep the so
 |---|---|
 | `detect.mjs` | Engine, name, orientation, package id, web build, art |
 | `capture-web.mjs` | Plays a web build in headless Chrome with a per-game `play.mjs`, capturing frames |
-| `capture-android.sh` | Same on an emulator or device (demo-mode status bar) |
+| `droid.mjs` | Plays an APK (Unity) on the Android emulator: boot, install, launch (waits for the game to settle), screenshots with a % grid for vision-driven play, tap/swipe/hold in % or px, scripted plans with background capture, clean status bar, system bars cropped |
 | `pick.py` | Scores frames, removes duplicates, picks for variety, makes a contact sheet |
 | `palette.py` | Dominant and vivid colors from game art |
 | `grab.mjs` | Captures a DOM element (such as the in-game logo) as a transparent PNG |
