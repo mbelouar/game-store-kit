@@ -27,6 +27,7 @@ def colorfulness(im):
 
 frames = []
 for f in sorted(glob.glob(os.path.join(a.raw, "*.png"))):
+    if f.endswith(".view.png"): continue  # droid.mjs grid previews are not frames
     try: im = Image.open(f); im.draft("RGB", (480, 480)); im.load()
     except Exception: continue
     small = im.convert("RGB").resize((240, int(240 * im.height / im.width)))
