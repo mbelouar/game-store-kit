@@ -45,13 +45,22 @@ if (exists('icon/icon-1024.png')) brand.iconPng = 'icon/icon-1024.png';
 // ---------- SCREENSHOTS ----------
 const shots = plan.screenshots || [];
 if (want('shots') && shots.length) {
-  const sizes = [{ tag: 'phone', w: portrait ? 1080 : 1920, h: portrait ? 1920 : 1080 }];
-  if (plan.tablet) sizes.push({ tag: 'tablet', w: portrait ? 1440 : 2560, h: portrait ? 2560 : 1440 });
-  for (const sz of sizes) shots.forEach((s, i) => {
-    const dim = pngSize(s.image); const aspect = s.aspect || (dim ? dim[0] / dim[1] : undefined);
-    jobs.push({ template: 'screenshot', out: R(`play-store/screenshots/${sz.tag}-${String(i + 1).padStart(2, '0')}.png`), w: sz.w, h: sz.h,
-      data: { ...s, aspect, index: i, total: shots.length, bridgeLeft: i > 0 ? shots[i - 1].bridge : undefined } });
-  });
+  // phone (required) + optional 7" and 10" tablet sets (Google needs 4+ tablet screenshots to feature a game on tablets).
+  // All 9:16 / 16:9 within Play's 1080-7680 px range. Per shot, `tabletImage` can point to a frame captured on a
+  // tablet emulator (better when the game's layout changes on tablets); otherwise the phone frame is reused.
+  const sizes = [{ dir: 'screenshots', tag: 'phone', w: 1080, h: 1920 }];
+  // a rebuild replaces the whole set: stale shots from an earlier plan must not stay mixed in
+  for (const d of ['screenshots', 'screenshots-7inch', 'screenshots-10inch']) fs.rmSync(R('play-store/' + d), { recursive: true, force: true });
+  if (plan.tablet) sizes.push({ dir: 'screenshots-7inch', tag: 'tablet7', w: 1440, h: 2560, tablet: true }, { dir: 'screenshots-10inch', tag: 'tablet10', w: 2160, h: 3840, tablet: true });
+  for (const sz of sizes) {
+    const [w, h] = portrait ? [sz.w, sz.h] : [sz.h, sz.w];
+    shots.forEach((s, i) => {
+      const image = (sz.tablet && s.tabletImage) || s.image;
+      const dim = pngSize(image); const aspect = (sz.tablet && s.tabletImage ? null : s.aspect) || (dim ? dim[0] / dim[1] : undefined);
+      jobs.push({ template: 'screenshot', out: R(`play-store/${sz.dir}/${sz.tag}-${String(i + 1).padStart(2, '0')}.png`), w, h,
+        data: { ...s, image, aspect, index: i, total: shots.length, bridgeLeft: i > 0 ? shots[i - 1].bridge : undefined } });
+    });
+  }
 }
 // ---------- FEATURE GRAPHIC ----------
 // plan.feature.template can point at the same key-art page as the splash (premium listings use the key art here)

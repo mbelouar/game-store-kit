@@ -8,6 +8,7 @@ store-assets/
     icon-512.png                   -> Play Console: App icon
     feature-graphic-1024x500.png   -> Play Console: Feature graphic
     screenshots/phone-01..08.png   -> Play Console: Phone screenshots
+    screenshots-7inch/ screenshots-10inch/ -> Play Console: Tablet screenshots (optional)
   android-icon/
     foreground.png  background.png -> Android Studio: res > New > Image Asset (or Unity Player Settings > Icon)
   splash/

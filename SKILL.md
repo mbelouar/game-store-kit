@@ -31,6 +31,7 @@ play-store/                        -> Play Console > Store listing
   icon-512.png                     App icon
   feature-graphic-1024x500.png     Feature graphic
   screenshots/phone-01..08.png     Phone screenshots (in order)
+  screenshots-7inch/  screenshots-10inch/   Tablet screenshots (when plan.tablet is on; 4+ each to be featured on tablets)
 android-icon/                      1024px launcher-icon layers
   foreground.png  background.png   Android Studio > res > New > Image Asset (Foreground/Background layer -> Path),
                                    or Unity Player Settings > Icon (adaptive)
@@ -207,6 +208,8 @@ Write the final as:
 }
 ```
 Paths are relative to `store-assets/`.
+
+**Tablets:** set `"tablet": true` to also render 7" (1440×2560) and 10" (2160×3840) sets, landscape swapped, all within Play's 1080–7680 px range. Google features a game on tablets only with **at least 4** tablet screenshots, so plan 4–8 shots. By default the phone frames are reused. If the game's layout changes on tablets (wider HUD, more of the level visible), capture on a tablet emulator (Android Studio > Device Manager > a Pixel Tablet AVD, then `droid.mjs boot --avd <name>`) and set `"tabletImage": "work/raw/..."` per shot.
 
 **Make every screenshot feel full and premium, never empty** (each one combines these):
 - **Headline** (2–5 words) and optionally **chips**: 1–3 glass pills with a real item icon ("Volcano Valley", "3 giant bosses", "Shield · Magnet · Rocket"). Use them on about half the shots.
