@@ -4,12 +4,28 @@
   const B = window.BRAND || {}, J = window.JOB || {};
   const C = Object.assign({ primary: '#6d28d9', secondary: '#db2777', accent: '#facc15', dark: '#0b0720', light: '#ffffff', text: '#ffffff' }, B.colors || {});
   const F = Object.assign({ display: 'Lilita One', body: 'Nunito' }, B.fonts || {});
+  // Language: script-aware fonts and text direction. The brand font usually covers Latin only, so other scripts get a
+  // display + body face that has their letters (override per game with brand.fonts.locales = { "ar": { display, body } }).
+  const LANG = J.lang || B.language || 'en-US', L2 = LANG.toLowerCase().split('-')[0];
+  const SCRIPT_FONTS = {
+    ar: ['Lalezar', 'Cairo'], fa: ['Lalezar', 'Vazirmatn'], ur: ['Lalezar', 'Noto Nastaliq Urdu'], he: ['Rubik', 'Rubik'],
+    ru: ['Rubik', 'Nunito'], uk: ['Rubik', 'Nunito'], bg: ['Rubik', 'Nunito'], sr: ['Rubik', 'Nunito'], el: ['Comfortaa', 'Nunito'],
+    ja: ['Dela Gothic One', 'M PLUS Rounded 1c'], ko: ['Black Han Sans', 'Noto Sans KR'], zh: ['ZCOOL KuaiLe', 'Noto Sans SC'],
+    hi: ['Baloo 2', 'Baloo 2'], bn: ['Baloo Da 2', 'Baloo Da 2'], th: ['Kanit', 'Kanit'], vi: ['Baloo 2', 'Nunito'], tr: [null, null],
+  };
+  const loc = (B.fonts && B.fonts.locales && (B.fonts.locales[LANG] || B.fonts.locales[L2])) || {};
+  const sf = SCRIPT_FONTS[L2] || [];
+  const scriptDisplay = loc.display || sf[0], scriptBody = loc.body || sf[1];
+  const RTL = ['ar', 'fa', 'ur', 'he'].includes(L2);
+  document.documentElement.lang = LANG; if (RTL) document.documentElement.dir = 'rtl';
+  const COMPLEX = RTL || ['hi', 'bn', 'th', 'ja', 'ko', 'zh'].includes(L2);   // connected or non-cased scripts: no tracking/uppercase
   const S = Object.assign({ corner: 0.06, grain: 0.07, glow: true, upper: true, blurShot: true }, B.style || {});
   const W = J.w, H = J.h, P = H > W; // portrait?
   const root = document.documentElement.style;
   for (const [k, v] of Object.entries(C)) root.setProperty('--' + k, v);
-  root.setProperty('--display', `'${F.display}', 'Arial Black', sans-serif`);
-  root.setProperty('--body', `'${F.body}', 'Helvetica Neue', Arial, sans-serif`);
+  root.setProperty('--display', `${scriptDisplay ? `'${scriptDisplay}', ` : ''}'${F.display}', 'Arial Black', sans-serif`);
+  root.setProperty('--body', `${scriptBody ? `'${scriptBody}', ` : ''}'${F.body}', 'Helvetica Neue', Arial, sans-serif`);
+  if (COMPLEX) document.documentElement.classList.add('complex-script');
   root.setProperty('--stroke', S.textStroke || 'transparent'); root.setProperty('--stroke-w', S.textStroke ? (S.strokeWidth || 0.012) * Math.min(W, H) + 'px' : '0px');
   root.setProperty('--W', W + 'px'); root.setProperty('--H', H + 'px');
 
@@ -18,7 +34,7 @@
   const face = (fam, url) => { const ff = new FontFace(fam, `url(${url})`); document.fonts.add(ff); fontJobs.push(ff.load().catch(() => {})); };
   if (F.displayFile) face(F.display, F.displayFile);
   if (F.bodyFile) face(F.body, F.bodyFile);
-  const g = [F.displayFile ? null : F.display, F.bodyFile ? null : F.body].filter(Boolean);
+  const g = [F.displayFile ? null : F.display, F.bodyFile ? null : F.body, scriptDisplay, scriptBody].filter(Boolean);
   // Google Fonts: ask for heavy weights; families that only ship one weight (Lilita One, Luckiest Guy...) reject
   // a multi-weight request with HTTP 400, so fall back to the plain family request.
   const gfont = (fam) => new Promise(res => {

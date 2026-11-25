@@ -47,3 +47,7 @@ h1 em { font-style: normal; color: var(--accent); text-shadow: 0 6px 0 rgba(0,0,
 .floater { position: absolute; pointer-events: none; }
 .bokeh { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .bokeh div { position: absolute; border-radius: 50%; background: radial-gradient(circle, #fff 0%, color-mix(in oklab, var(--accent) 60%, transparent) 60%, transparent 70%); }
+
+/* connected / non-cased scripts (Arabic, Hebrew, Hindi, Thai, CJK): no letter-spacing, no forced uppercase */
+.complex-script h1, .complex-script .sub, .complex-script .chip, .complex-script .clabel { letter-spacing: 0 !important; text-transform: none !important; }
+.complex-script h1 { line-height: 1.25; }

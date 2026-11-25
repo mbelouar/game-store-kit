@@ -43,23 +43,40 @@ if (jobs.length) { run(jobs.splice(0)); }
 if (exists('icon/icon-1024.png')) brand.iconPng = 'icon/icon-1024.png';
 
 // ---------- SCREENSHOTS ----------
+// phone (required) + optional 7" and 10" tablet sets (Google needs 4+ tablet screenshots to feature a game on tablets).
+// All 9:16 / 16:9 within Play's 1080-7680 px range. Per shot, `tabletImage` can point to a frame captured on a
+// tablet emulator (better when the game's layout changes on tablets); otherwise the phone frame is reused.
+// Localized sets: plan.locales = { "fr-FR": { screenshots: [{ headline, sub, chips, badge, callout: { label } }], feature: {...} } }
+// Only texts are translated; frames, crops, layout and decor come from the main plan, so every language matches.
 const shots = plan.screenshots || [];
-if (want('shots') && shots.length) {
-  // phone (required) + optional 7" and 10" tablet sets (Google needs 4+ tablet screenshots to feature a game on tablets).
-  // All 9:16 / 16:9 within Play's 1080-7680 px range. Per shot, `tabletImage` can point to a frame captured on a
-  // tablet emulator (better when the game's layout changes on tablets); otherwise the phone frame is reused.
+const TEXT_KEYS = ['headline', 'sub', 'chips', 'badge'];
+function screenshotJobs(list, base, lang) {
   const sizes = [{ dir: 'screenshots', tag: 'phone', w: 1080, h: 1920 }];
-  // a rebuild replaces the whole set: stale shots from an earlier plan must not stay mixed in
-  for (const d of ['screenshots', 'screenshots-7inch', 'screenshots-10inch']) fs.rmSync(R('play-store/' + d), { recursive: true, force: true });
   if (plan.tablet) sizes.push({ dir: 'screenshots-7inch', tag: 'tablet7', w: 1440, h: 2560, tablet: true }, { dir: 'screenshots-10inch', tag: 'tablet10', w: 2160, h: 3840, tablet: true });
   for (const sz of sizes) {
     const [w, h] = portrait ? [sz.w, sz.h] : [sz.h, sz.w];
-    shots.forEach((s, i) => {
+    list.forEach((s, i) => {
       const image = (sz.tablet && s.tabletImage) || s.image;
       const dim = pngSize(image); const aspect = (sz.tablet && s.tabletImage ? null : s.aspect) || (dim ? dim[0] / dim[1] : undefined);
-      jobs.push({ template: 'screenshot', out: R(`play-store/${sz.dir}/${sz.tag}-${String(i + 1).padStart(2, '0')}.png`), w, h,
-        data: { ...s, image, aspect, index: i, total: shots.length, bridgeLeft: i > 0 ? shots[i - 1].bridge : undefined } });
+      jobs.push({ template: 'screenshot', out: R(`${base}/${sz.dir}/${sz.tag}-${String(i + 1).padStart(2, '0')}.png`), w, h,
+        data: { ...s, image, aspect, lang, index: i, total: list.length, bridgeLeft: i > 0 ? list[i - 1].bridge : undefined } });
     });
+  }
+}
+if (want('shots') && shots.length) {
+  // a rebuild replaces the whole set: stale shots from an earlier plan must not stay mixed in
+  for (const d of ['screenshots', 'screenshots-7inch', 'screenshots-10inch', 'locales']) fs.rmSync(R('play-store/' + d), { recursive: true, force: true });
+  screenshotJobs(shots, 'play-store', brand.language || 'en-US');
+  for (const [lang, loc] of Object.entries(plan.locales || {})) {
+    const tr = loc.screenshots || [];
+    if (tr.length && tr.length !== shots.length) console.warn(`⚠ locale ${lang}: ${tr.length} translated shots for ${shots.length} screenshots (missing ones keep the original text)`);
+    const merged = shots.map((s, i) => {
+      const t = tr[i] || {}; const m = { ...s };
+      for (const k of TEXT_KEYS) if (t[k] !== undefined) m[k] = t[k];
+      if (s.callout && t.callout?.label) m.callout = { ...s.callout, label: t.callout.label };
+      return m;
+    });
+    screenshotJobs(merged, `play-store/locales/${lang}`, lang);
   }
 }
 // ---------- FEATURE GRAPHIC ----------
@@ -67,7 +84,10 @@ if (want('shots') && shots.length) {
 if (want('feature') && plan.feature) {
   const ft = plan.feature.template;
   if (ft) { const kit = path.join(path.dirname(R(ft)), 'kit'); fs.mkdirSync(kit, { recursive: true }); for (const f of ['_base.css', '_base.js', 'scene.js']) fs.copyFileSync(path.join(here, '..', 'templates', f), path.join(kit, f)); }
-  jobs.push({ template: ft || 'feature', out: R('play-store/feature-graphic-1024x500.png'), w: 1024, h: 500, data: { ...plan.feature, feature: true } });
+  jobs.push({ template: ft || 'feature', out: R('play-store/feature-graphic-1024x500.png'), w: 1024, h: 500, data: { ...plan.feature, feature: true, lang: brand.language || 'en-US' } });
+  // a localized feature graphic only when the locale translates its text (key art with just the logo stays shared)
+  for (const [lang, loc] of Object.entries(plan.locales || {})) if (loc.feature)
+    jobs.push({ template: ft || 'feature', out: R(`play-store/locales/${lang}/feature-graphic-1024x500.png`), w: 1024, h: 500, data: { ...plan.feature, ...loc.feature, feature: true, lang } });
 }
 // ---------- SPLASH ----------
 if (want('splash')) {

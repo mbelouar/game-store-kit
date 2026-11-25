@@ -37,15 +37,19 @@ check(os.path.join(d, "play-store/icon-512.png"), 512, 512, 1024)
 check(os.path.join(d, "play-store/feature-graphic-1024x500.png"), 1024, 500, 15 * 1024, opaque=True)
 # screenshots: 9:16 / 16:9, 1080-7680 px, <= 8 MB; phone 2-8 required; tablets 4-8 to be featured on tablets
 sets = {}
-for name, folder in (("phone", "screenshots"), ("7-inch tablet", "screenshots-7inch"), ("10-inch tablet", "screenshots-10inch")):
-    files = sorted(glob.glob(os.path.join(d, "play-store", folder, "*.png")) + glob.glob(os.path.join(d, "play-store", folder, "*.jpg")))
-    sets[name] = [check(p, max_kb=8 * 1024, ratio=16 / 9 + 0.01, opaque=True, bounds=(1080, 7680)) for p in files]
+bases = [("", os.path.join(d, "play-store"))] + [(os.path.basename(x) + " ", x) for x in sorted(glob.glob(os.path.join(d, "play-store", "locales", "*")))]
+for prefix, base in bases:
+    for name, folder in (("phone", "screenshots"), ("7-inch tablet", "screenshots-7inch"), ("10-inch tablet", "screenshots-10inch")):
+        files = sorted(glob.glob(os.path.join(base, folder, "*.png")) + glob.glob(os.path.join(base, folder, "*.jpg")))
+        if files or not prefix: sets[prefix + name] = [check(p, max_kb=8 * 1024, ratio=16 / 9 + 0.01, opaque=True, bounds=(1080, 7680)) for p in files]
+    fg = os.path.join(base, "feature-graphic-1024x500.png")
+    if prefix: check(fg, 1024, 500, 15 * 1024, opaque=True)
 shots = [p for v in sets.values() for p in v]
 phone = sets["phone"]
-if phone and not 2 <= len(phone) <= 8: problems.append(f"Play needs 2-8 phone screenshots (have {len(phone)}); 4+ for games to be promoted")
-for name in ("7-inch tablet", "10-inch tablet"):
-    n = len(sets[name])
-    if n and n < 4: problems.append(f"{name}: {n} screenshots; Google needs at least 4 to feature the game on tablets")
+for name, files in sets.items():
+    n = len(files)
+    if name.endswith("phone") and n and not 2 <= n <= 8: problems.append(f"{name}: Play needs 2-8 phone screenshots (have {n}); 4+ for games to be promoted")
+    if "tablet" in name and n and n < 4: problems.append(f"{name}: {n} screenshots; Google needs at least 4 to feature the game on tablets")
     if n > 8: problems.append(f"{name}: {n} screenshots; Play allows at most 8")
 for p in sorted(glob.glob(os.path.join(d, "splash/*.png"))): check(p, opaque=True)
 # @capacitor/assets sources (Capacitor games): icons >= 1024, splash >= 2732, opaque except the foreground layer
@@ -73,8 +77,9 @@ page = f"""<!doctype html><meta charset=utf-8><title>{html.escape(brand.get('nam
 {sec('Icon', [tile(p) for p in icons], 'icons')}
 {sec('Feature graphic', [tile(os.path.join(d,'play-store/feature-graphic-1024x500.png'))] if os.path.exists(os.path.join(d,'play-store/feature-graphic-1024x500.png')) else [])}
 {sec('Phone screenshots', [tile(p) for p in phone])}
-{sec('7-inch tablet screenshots', [tile(p) for p in sets['7-inch tablet']])}
-{sec('10-inch tablet screenshots', [tile(p) for p in sets['10-inch tablet']])}
+{sec('7-inch tablet screenshots', [tile(p) for p in sets.get('7-inch tablet', [])])}
+{sec('10-inch tablet screenshots', [tile(p) for p in sets.get('10-inch tablet', [])])}
+{''.join(sec(k + ' screenshots', [tile(p) for p in v]) for k, v in sets.items() if ' ' in k and not k.startswith(('7-inch', '10-inch')))}
 {sec('Splash', [tile(p) for p in sorted(glob.glob(os.path.join(d,'splash/*.png')))])}
 {sec('Icon layers and splash sources', [tile(p) for p in layers], 'small')}
 <h2>Spec check</h2>{''.join(f"<div class=warn>⚠ {html.escape(x)}</div>" for x in problems) or '<div>All checks passed ✓</div>'}

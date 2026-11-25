@@ -34,6 +34,7 @@ play-store/                        -> Play Console > Store listing
   screenshots-7inch/  screenshots-10inch/   Tablet screenshots (when plan.tablet is on; 4+ each to be featured on tablets)
   store-listing.md                 App name, short + full description, release notes, category, tags (paste-ready)
   publish-checklist.md             Publish-readiness report: target SDK, 64-bit/16 KB, version code, permissions, plugins
+  locales/<lang>/                  per language: screenshots/ (+ tablet sets), store-listing.md, feature graphic if its text was translated
 android-icon/                      1024px launcher-icon layers
   foreground.png  background.png   Android Studio > res > New > Image Asset (Foreground/Background layer -> Path),
                                    or Unity Player Settings > Icon (adaptive)
@@ -213,6 +214,15 @@ Paths are relative to `store-assets/`.
 
 **Tablets:** set `"tablet": true` to also render 7" (1440×2560) and 10" (2160×3840) sets, landscape swapped, all within Play's 1080–7680 px range. Google features a game on tablets only with **at least 4** tablet screenshots, so plan 4–8 shots. By default the phone frames are reused. If the game's layout changes on tablets (wider HUD, more of the level visible), capture on a tablet emulator (Android Studio > Device Manager > a Pixel Tablet AVD, then `droid.mjs boot --avd <name>`) and set `"tabletImage": "work/raw/..."` per shot.
 
+**Languages:** only when the user asks for other languages. Add `plan.locales` with translated **texts only** (headline, sub, chips, badge, callout label), in the same order as `screenshots`. Frames, crops, layout, items and bridges come from the main plan, so every language matches:
+```json
+"locales": {
+  "fr-FR": { "screenshots": [ { "headline": "Échappe au *T-Rex*", "chips": ["Touche pour sauter"] }, { "headline": "..." } ] },
+  "ar":    { "screenshots": [ { "headline": "اهرب من *التيرانوصور*", "chips": ["المس للقفز"] }, { "headline": "..." } ] }
+}
+```
+Use Play's language codes (`fr-FR`, `es-ES`, `es-419`, `pt-BR`, `de-DE`, `ar`, `tr-TR`, `ja-JP`, `ko-KR`, `zh-CN`, `hi-IN`, `ru-RU`...). Arabic, Persian, Urdu and Hebrew render right to left. Each script gets a display/body font that has its letters (Arabic: Lalezar + Cairo; Hebrew/Cyrillic: Rubik; Japanese: Dela Gothic One; Korean: Black Han Sans; Chinese: ZCOOL KuaiLe; Hindi: Baloo 2; Thai: Kanit), with no letter-spacing or forced uppercase. Override with `brand.fonts.locales = { "ar": { "display": "...", "body": "..." } }`. Write translations as a native copywriter: short, punchy, the same meaning and highlight, not word-for-word. Keep game names (bosses, worlds) as the game itself shows them. Look at every rendered language: long words must not overflow, and highlights must land on the right word.
+
 **Make every screenshot feel full and premium, never empty** (each one combines these):
 - **Headline** (2–5 words) and optionally **chips**: 1–3 glass pills with a real item icon ("Volcano Valley", "3 giant bosses", "Shield · Magnet · Rocket"). Use them on about half the shots.
 - **Full-bleed gameplay (default)**: the frame fills the whole canvas, zoomed (`zoom`, ~1.3 in portrait) so the characters are big. `focus` = the point of the action in the frame (0–1), `at` = where it lands on the canvas (0–1). The HUD is pushed off the top (`hudCrop`, default 0.13 of the frame) and the headline sits on calm sky over a soft gradient. Aim for action in the lower 2/3, little empty ground, nothing important under the caption.
@@ -254,6 +264,7 @@ Write it from what you learned playing (real features, real names: worlds, bosse
 - **short** ≤80: one sentence promising the core fun (verb-first, concrete).
 - **full** ≤4000: the first 167 characters (shown before "more") are a complete hook sentence. Then 4–6 short sections with UPPERCASE headings (worlds/levels, bosses, characters/collection, power-ups/progression, modes), 1–2 sentences each. No keyword stuffing, no testimonials, no ranking claims, no URLs.
 - **releaseNotes** ≤500: only for updates, what actually changed.
+- **locales**: translated `title`, `short`, `full`, `releaseNotes` per language (same codes as `plan.locales`): `"locales": { "fr-FR": { "title": "...", "short": "...", "full": "..." } }`. Each language is checked with the same rules, including the policy words in French, Spanish, Portuguese, German, Italian, Turkish and Arabic, and gets its own `play-store/locales/<lang>/store-listing.md` (Play Console > Main store listing > Manage translations).
 - **category**: one Play game category (Action, Adventure, Arcade, Board, Card, Casual, Puzzle, Racing, Role Playing, Simulation, Sports, Strategy, Word...). **tags**: up to 5.
 `build.mjs` runs `listing.mjs`, which checks Play's limits and metadata policy, also flags buzzwords inside screenshot/feature-graphic text, and writes `play-store/store-listing.md`, ready to paste into Play Console. Fix every ✗ error; review the ⚠ warnings.
 
