@@ -33,6 +33,7 @@ play-store/                        -> Play Console > Store listing
   screenshots/phone-01..08.png     Phone screenshots (in order)
   screenshots-7inch/  screenshots-10inch/   Tablet screenshots (when plan.tablet is on; 4+ each to be featured on tablets)
   store-listing.md                 App name, short + full description, release notes, category, tags (paste-ready)
+  publish-checklist.md             Publish-readiness report: target SDK, 64-bit/16 KB, version code, permissions, plugins
 android-icon/                      1024px launcher-icon layers
   foreground.png  background.png   Android Studio > res > New > Image Asset (Foreground/Background layer -> Path),
                                    or Unity Player Settings > Icon (adaptive)
@@ -296,12 +297,17 @@ Tweak `brand.json` (colors/style) or `plan.json` (captions/frames/crops/layout),
 ```bash
 find "$PROJECT" -newer "$PROJECT/store-assets/brand.json" -not -path "$PROJECT/store-assets/*" -not -path "*/node_modules/*" -type f | head
 ```
-2. Show the user the result (send the screenshots, feature graphic and icon, or open `preview.html`) and say which icon concept you chose and why. Make the changes they ask for now (later changes need `pack.mjs --restore` first).
-3. Pack. The Play Store files, the Image Asset sources and the splash stay visible; the sources move into the hidden `.kit/` for the next run:
+2. Publish-readiness report (read-only; pass the developer's APK/AAB when there is one):
+```bash
+node ~/.claude/skills/game-store-kit/scripts/readiness.mjs "$PROJECT" [--apk <app.apk|app.aab>] --out "$PROJECT"/store-assets/play-store/publish-checklist.md
+```
+It checks what Play enforces at upload (target API 36 since 2026-08-31, 64-bit native code, 16 KB alignment, version code) and what slows review (sensitive permissions, unused Capacitor plugins, debuggable builds, template app IDs, Unity Mono/ARMv7-only builds, missing release keystore). Tell the user about every ✗ and ⚠ in plain words and how to fix it. Never fix the project yourself.
+3. Show the user the result (send the screenshots, feature graphic and icon, or open `preview.html`) and say which icon concept you chose and why. Make the changes they ask for now (later changes need `pack.mjs --restore` first).
+4. Pack. The Play Store files, the Image Asset sources and the splash stay visible; the sources move into the hidden `.kit/` for the next run:
 ```bash
 GSK_PROJECT="$PROJECT" node ~/.claude/skills/game-store-kit/scripts/pack.mjs
 ```
-4. Tell the user where each file goes (the table above). Do **not** copy anything into the project, and don't run these commands yourself: the developer runs them when they choose.
+5. Tell the user where each file goes (the table above). Do **not** copy anything into the project, and don't run these commands yourself: the developer runs them when they choose.
    - **Icon (both engines)**: Android Studio > app > res > New > Image Asset: Foreground layer > Path = `android-icon/foreground.png`, Background layer > Path = `android-icon/background.png` (the subject already sits inside the safe zone, so keep the default resize).
    - **Splash, Capacitor**: on **Android 12+ (most devices)** Android shows its own system splash: the app icon (from Image Asset) centred on a background colour. That's what players see (tested on an API 36 emulator); Capacitor's `splash.png` only appears on Android 11 and older. So:
      - background colour: one line in the launch theme (`AppTheme.NoActionBarLaunch` in `res/values/styles.xml`): `<item name="windowSplashScreenBackground">#xxxxxx</item>` with the brand's `dark` or `primary` colour.

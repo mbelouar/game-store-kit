@@ -10,6 +10,7 @@ store-assets/
     screenshots/phone-01..08.png   -> Play Console: Phone screenshots
     screenshots-7inch/ screenshots-10inch/ -> Play Console: Tablet screenshots (optional)
     store-listing.md               -> Play Console: app name, short + full description, release notes (checked against Play's limits and policy)
+    publish-checklist.md           -> what Play checks at upload: target API 36, 64-bit + 16 KB native code, version code, permissions, unused plugins
   android-icon/
     foreground.png  background.png -> Android Studio: res > New > Image Asset (or Unity Player Settings > Icon)
   splash/
@@ -64,6 +65,7 @@ Ask for changes (captions, frames, icon concept) before it packs. To keep the so
 | `render.mjs` / `build.mjs` | Renders every asset at exact store sizes from `brand.json` and `plan.json` |
 | `finalize.py` | Flattens transparency where stores require it, checks specs, writes `preview.html` |
 | `listing.mjs` | Checks the store listing text and screenshot captions against Play's limits and metadata policy; writes the paste-ready `store-listing.md` |
+| `readiness.mjs` | Read-only publish-readiness report for Capacitor and Unity projects (and a built APK/AAB): target SDK, version code, app ID, permissions, unused plugins, debuggable, IL2CPP/ARM64, keystore, 64-bit and 16 KB native code |
 | `pack.mjs` | Keeps only the Play Store files, Image Asset sources and splash + hidden `.kit/` sources; `--restore` brings them back for the next run |
 | `templates/scene.js` | Key-art toolkit: sky, glow, rays, procedural ridges/volcanoes/trees, comets, particles, speed lines |
 
