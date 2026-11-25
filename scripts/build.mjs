@@ -86,6 +86,8 @@ if (jobs.length) run(jobs);
 // optional @capacitor/assets splash sources = the 2732 key art (light and dark)
 if (capAssets && want('splash') && exists('splash/splash-2732x2732.png')) for (const n of ['splash', 'splash-dark']) fs.copyFileSync(R('splash/splash-2732x2732.png'), R(`capacitor-assets/${n}.png`));
 execFileSync('python3', [path.join(here, 'finalize.py'), dir], { stdio: 'inherit' });
+// store listing text: limits + Play metadata policy, and play-store/store-listing.md (paste-ready)
+if (exists('listing.json')) { try { execFileSync('node', [path.join(here, 'listing.mjs'), '--dir', dir], { stdio: 'inherit' }); } catch { /* errors already printed */ } }
 
 function run(list) {
   const jf = R('.jobs.tmp.json'); // temp, removed below: a rebuild must not leave scratch behind

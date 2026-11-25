@@ -32,6 +32,7 @@ play-store/                        -> Play Console > Store listing
   feature-graphic-1024x500.png     Feature graphic
   screenshots/phone-01..08.png     Phone screenshots (in order)
   screenshots-7inch/  screenshots-10inch/   Tablet screenshots (when plan.tablet is on; 4+ each to be featured on tablets)
+  store-listing.md                 App name, short + full description, release notes, category, tags (paste-ready)
 android-icon/                      1024px launcher-icon layers
   foreground.png  background.png   Android Studio > res > New > Image Asset (Foreground/Background layer -> Path),
                                    or Unity Player Settings > Icon (adaptive)
@@ -236,6 +237,24 @@ Design process:
 5. **Logo** large at the top with a soft glow, part of the scene and not a sticker.
 6. **One page, all sizes.** Use `o(portrait, landscape, square, feature)` values so 1080×1920, 1920×1080, 2732² and the 1024×500 feature graphic each get their own composition. Keep key elements away from the outer ~8% (crops and masks).
 7. Render, look at all four, fix overlaps, empty areas and tangents, and repeat until it looks like a poster.
+
+## 6b. Store listing text → `store-assets/listing.json`
+
+Write it from what you learned playing (real features, real names: worlds, bosses, characters, modes). Never invent features.
+```json
+{ "language": "en-US",
+  "title": "Dino Dash: Jurassic Run",
+  "short": "Outrun the T-Rex, dodge meteors and hatch dinos across 6 prehistoric eras.",
+  "full": "A meteor is coming and only the fastest dinosaur survives. Tap to jump, swipe to duck...\n\nRUN THROUGH 6 ERAS\n...",
+  "releaseNotes": "New: the Meteor Storm era and the Mega Pterodactyl boss.",
+  "category": "Arcade", "tags": ["Runner", "Dinosaur", "Casual"] }
+```
+- **title** ≤30: the game's name, optionally with a short descriptive subtitle. No "best", "#1", "free", "new", emojis or ALL CAPS: these are errors.
+- **short** ≤80: one sentence promising the core fun (verb-first, concrete).
+- **full** ≤4000: the first 167 characters (shown before "more") are a complete hook sentence. Then 4–6 short sections with UPPERCASE headings (worlds/levels, bosses, characters/collection, power-ups/progression, modes), 1–2 sentences each. No keyword stuffing, no testimonials, no ranking claims, no URLs.
+- **releaseNotes** ≤500: only for updates, what actually changed.
+- **category**: one Play game category (Action, Adventure, Arcade, Board, Card, Casual, Puzzle, Racing, Role Playing, Simulation, Sports, Strategy, Word...). **tags**: up to 5.
+`build.mjs` runs `listing.mjs`, which checks Play's limits and metadata policy, also flags buzzwords inside screenshot/feature-graphic text, and writes `play-store/store-listing.md`, ready to paste into Play Console. Fix every ✗ error; review the ⚠ warnings.
 
 ## 7. Build everything
 

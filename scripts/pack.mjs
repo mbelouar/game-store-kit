@@ -48,7 +48,7 @@ if (a.full) {
 // ------------------------------------------------------------------ collect sources into .kit
 if (!a['no-kit']) {
   const keep = new Set();
-  for (const f of ['brand.json', 'plan.json']) if (fs.existsSync(R(f))) keep.add(f);
+  for (const f of ['brand.json', 'plan.json', 'listing.json']) if (fs.existsSync(R(f))) keep.add(f);
   for (const d of ['icon', 'brand']) if (fs.existsSync(R(d))) keep.add(d);
   // play scripts, key-art pages, helper scripts written for this game
   if (fs.existsSync(R('work'))) for (const f of fs.readdirSync(R('work'))) if (/\.(mjs|js|html|txt)$/.test(f) && !f.startsWith('.')) keep.add('work/' + f);
