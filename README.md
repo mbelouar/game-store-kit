@@ -61,6 +61,8 @@ Ask for changes (captions, frames, icon concept) before it packs. To keep the so
 | `detect.mjs` | Engine, name, orientation, package id, web build, art |
 | `capture-web.mjs` | Plays a web build in headless Chrome with a per-game `play.mjs`, capturing frames |
 | `droid.mjs` | Plays an APK (Unity) on the Android emulator: boot, install, launch (waits for the game to settle), screenshots with a % grid for vision-driven play, tap/swipe/hold in % or px, scripted plans with background capture, clean status bar, system bars cropped |
+| `unity-build.mjs` | Builds an installable APK of a Unity project from a copy (never the original): lists editors and the project's own build methods, built-in IL2CPP/ARM64 release builder, clear compile/guard/Gradle error summaries |
+| `slice.py` | Splits a sprite sheet into whole sprites along its transparent gaps |
 | `pick.py` | Scores frames, removes duplicates, picks for variety, makes a contact sheet |
 | `palette.py` | Dominant and vivid colors from game art |
 | `grab.mjs` | Captures a DOM element (such as the in-game logo) as a transparent PNG |
